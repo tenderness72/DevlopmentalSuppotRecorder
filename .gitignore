@@ -1,0 +1,8 @@
+# Visual Studio の一時フォルダ
+.vs/
+bin/
+obj/
+
+# ユーザー固有の設定など
+*.user
+*.suo

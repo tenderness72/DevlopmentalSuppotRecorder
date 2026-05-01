@@ -1,0 +1,214 @@
+<UserControl x:Class="SessionRecorder.App.Views.ChildListView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" Loaded="OnLoaded">
+    <Grid Margin="24,20">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="320"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+
+        <!-- Left: Child list -->
+        <DockPanel Grid.Column="0" Margin="0,0,16,0">
+            <StackPanel DockPanel.Dock="Top" Margin="0,0,0,8">
+                <TextBlock Text="児童一覧" FontSize="18" FontWeight="Bold" Foreground="{StaticResource TextBrush}"/>
+                <StackPanel Orientation="Horizontal" Margin="0,8,0,4">
+                    <Button Content="＋ 新規登録" Style="{StaticResource PrimaryButton}"
+                            Command="{Binding NewChildCommand}"/>
+                    <Button Content="CSVインポート" Style="{StaticResource SecondaryButton}"
+                            Command="{Binding ImportCsvCommand}" Margin="8,0,0,0"/>
+                </StackPanel>
+                <!-- 複数選択・削除ツールバー -->
+                <StackPanel Orientation="Horizontal" Margin="0,2,0,0">
+                    <Button Content="全選択/解除" Style="{StaticResource SecondaryButton}"
+                            Command="{Binding ToggleAllCheckCommand}" Padding="8,4"/>
+                    <Button Content="選択を削除" Padding="8,4" Margin="8,0,0,0"
+                            Command="{Binding DeleteCheckedCommand}"
+                            IsEnabled="{Binding HasCheckedChildren}">
+                        <Button.Style>
+                            <Style TargetType="Button" BasedOn="{StaticResource SecondaryButton}">
+                                <Style.Triggers>
+                                    <Trigger Property="IsEnabled" Value="True">
+                                        <Setter Property="Background" Value="#FEE2E2"/>
+                                        <Setter Property="Foreground" Value="#DC2626"/>
+                                        <Setter Property="BorderBrush" Value="#FECACA"/>
+                                    </Trigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                    </Button>
+                </StackPanel>
+            </StackPanel>
+
+            <ListBox ItemsSource="{Binding SelectableChildren}" SelectedItem="{Binding SelectedItem}"
+                     BorderThickness="0" Background="Transparent">
+                <ListBox.ItemContainerStyle>
+                    <Style TargetType="ListBoxItem">
+                        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                        <Setter Property="Padding" Value="0"/>
+                    </Style>
+                </ListBox.ItemContainerStyle>
+                <ListBox.ItemTemplate>
+                    <DataTemplate>
+                        <Border Background="White" CornerRadius="6" Padding="8,8" Margin="0,2"
+                                BorderBrush="{StaticResource BorderBrush}" BorderThickness="1">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <CheckBox Grid.Column="0" IsChecked="{Binding IsChecked}"
+                                          VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                <StackPanel Grid.Column="1">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="{Binding Child.ChildCode}" FontWeight="SemiBold"
+                                                   Foreground="{StaticResource PrimaryBrush}" FontSize="13"/>
+                                        <TextBlock Text="{Binding Child.Name}" Margin="8,0,0,0" FontSize="13"/>
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                                        <TextBlock Text="{Binding Child.PrimaryDiagnosis}" FontSize="11"
+                                                   Foreground="{StaticResource SubTextBrush}"/>
+                                        <TextBlock Text=" / " FontSize="11" Foreground="{StaticResource SubTextBrush}"/>
+                                        <TextBlock Text="{Binding Child.OtaStage, Converter={StaticResource EnumToDisplay}}"
+                                                   FontSize="11" Foreground="{StaticResource SubTextBrush}"/>
+                                    </StackPanel>
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+        </DockPanel>
+
+        <!-- Right: Detail panel -->
+        <Border Grid.Column="1" Background="White" CornerRadius="8" Padding="20"
+                BorderBrush="{StaticResource BorderBrush}" BorderThickness="1"
+                Visibility="{Binding ShowDetailPanel, Converter={StaticResource BoolToVis}}">
+            <DockPanel>
+                <!-- Header with actions -->
+                <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,16">
+                    <TextBlock FontSize="16" FontWeight="Bold" VerticalAlignment="Center">
+                        <Run Text="{Binding SelectedChild.ChildCode, Mode=OneWay}"/>
+                        <Run Text=" "/>
+                        <Run Text="{Binding SelectedChild.Name, Mode=OneWay}"/>
+                    </TextBlock>
+                    <Button Content="編集" Style="{StaticResource SecondaryButton}" Margin="16,0,0,0"
+                            Command="{Binding EditChildCommand}"
+                            Visibility="{Binding IsEditing, Converter={StaticResource InvBoolToVis}}"/>
+                    <Button Content="Excel出力" Style="{StaticResource SecondaryButton}" Margin="8,0,0,0"
+                            Command="{Binding ExportExcelCommand}"
+                            Visibility="{Binding IsEditing, Converter={StaticResource InvBoolToVis}}"/>
+                </StackPanel>
+
+                <!-- Edit form (visible when editing) -->
+                <ScrollViewer DockPanel.Dock="Top"
+                              Visibility="{Binding IsEditing, Converter={StaticResource BoolToVis}}"
+                              VerticalScrollBarVisibility="Auto">
+                    <StackPanel MaxWidth="500" HorizontalAlignment="Left">
+                        <TextBlock Style="{StaticResource FieldLabel}" Text="児童コード"/>
+                        <TextBox Text="{Binding EditChildCode, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,8"/>
+                        <TextBlock Style="{StaticResource FieldLabel}" Text="氏名"/>
+                        <TextBox Text="{Binding EditName, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,8"/>
+                        <TextBlock Style="{StaticResource FieldLabel}" Text="性別"/>
+                        <ComboBox SelectedItem="{Binding EditGender}" Margin="0,0,0,8">
+                            <ComboBoxItem Content="男"/>
+                            <ComboBoxItem Content="女"/>
+                            <ComboBoxItem Content="その他"/>
+                        </ComboBox>
+                        <TextBlock Style="{StaticResource FieldLabel}" Text="生年月日 (yyyy/mm/dd)"/>
+                        <TextBox Text="{Binding EditBirthDate, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,8"/>
+                        <TextBlock Style="{StaticResource FieldLabel}" Text="主診断/特性"/>
+                        <TextBox Text="{Binding EditDiagnosis, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,8"/>
+                        <TextBlock Style="{StaticResource FieldLabel}" Text="太田ステージ"/>
+                        <ComboBox ItemsSource="{Binding OtaStages}" SelectedValue="{Binding EditOtaStage}"
+                                  SelectedValuePath="Value" DisplayMemberPath="DisplayName" Margin="0,0,0,8"/>
+                        <TextBlock Style="{StaticResource FieldLabel}" Text="利用開始日"/>
+                        <DatePicker SelectedDate="{Binding EditStartDate}" Margin="0,0,0,8"/>
+                        <TextBlock Style="{StaticResource FieldLabel}" Text="現在のターゲットスキル"/>
+                        <TextBox Text="{Binding EditTargetSkills, UpdateSourceTrigger=PropertyChanged}"
+                                 TextWrapping="Wrap" AcceptsReturn="True" Height="60" Margin="0,0,0,8"/>
+                        <TextBlock Style="{StaticResource FieldLabel}" Text="備考"/>
+                        <TextBox Text="{Binding EditNotes, UpdateSourceTrigger=PropertyChanged}"
+                                 TextWrapping="Wrap" AcceptsReturn="True" Height="60" Margin="0,0,0,12"/>
+                        <StackPanel Orientation="Horizontal">
+                            <Button Content="保存" Style="{StaticResource PrimaryButton}" Command="{Binding SaveChildCommand}"/>
+                            <Button Content="キャンセル" Style="{StaticResource SecondaryButton}" Margin="8,0,0,0"
+                                    Command="{Binding CancelEditCommand}"/>
+                        </StackPanel>
+                    </StackPanel>
+                </ScrollViewer>
+
+                <!-- Info + tabs (visible when NOT editing) -->
+                <DockPanel Visibility="{Binding IsEditing, Converter={StaticResource InvBoolToVis}}">
+                    <!-- Child info summary -->
+                    <WrapPanel DockPanel.Dock="Top" Margin="0,0,0,12">
+                        <Border Background="{StaticResource BgBrush}" CornerRadius="4" Padding="8,4" Margin="0,0,8,4">
+                            <TextBlock FontSize="12">
+                                <Run Text="診断: " Foreground="{StaticResource SubTextBrush}"/>
+                                <Run Text="{Binding SelectedChild.PrimaryDiagnosis, Mode=OneWay}"/>
+                            </TextBlock>
+                        </Border>
+                        <Border Background="{StaticResource BgBrush}" CornerRadius="4" Padding="8,4" Margin="0,0,8,4">
+                            <TextBlock FontSize="12">
+                                <Run Text="太田: " Foreground="{StaticResource SubTextBrush}"/>
+                                <Run Text="{Binding SelectedChild.OtaStage, Mode=OneWay, Converter={StaticResource EnumToDisplay}}"/>
+                            </TextBlock>
+                        </Border>
+                        <Border Background="{StaticResource BgBrush}" CornerRadius="4" Padding="8,4" Margin="0,0,8,4">
+                            <TextBlock FontSize="12">
+                                <Run Text="ターゲット: " Foreground="{StaticResource SubTextBrush}"/>
+                                <Run Text="{Binding SelectedChild.CurrentTargetSkills, Mode=OneWay}"/>
+                            </TextBlock>
+                        </Border>
+                    </WrapPanel>
+
+                    <!-- Tabs: Sessions / Observations -->
+                    <TabControl SelectedIndex="{Binding SelectedDetailTab}" BorderThickness="0,1,0,0"
+                                BorderBrush="{StaticResource BorderBrush}">
+                        <TabItem Header="セッション記録">
+                            <DataGrid ItemsSource="{Binding ChildSessions}" Margin="0,8,0,0">
+                                <DataGrid.Columns>
+                                    <DataGridTextColumn Header="日付" Binding="{Binding Date, StringFormat=yyyy/MM/dd}" Width="90"/>
+                                    <DataGridTextColumn Header="課題名" Binding="{Binding Program.ProgramName}" Width="160"/>
+                                    <DataGridTextColumn Header="領域" Binding="{Binding Program.Domain.DomainName}" Width="80"/>
+                                    <DataGridTextColumn Header="試行" Binding="{Binding TrialCount}" Width="50"/>
+                                    <DataGridTextColumn Header="正答" Binding="{Binding CorrectCount}" Width="50"/>
+                                    <DataGridTextColumn Header="正答率" Binding="{Binding CorrectRate, Converter={StaticResource Percentage}}" Width="60"/>
+                                    <DataGridTextColumn Header="判定" Binding="{Binding MasteryLevel, Converter={StaticResource EnumToDisplay}}" Width="70"/>
+                                    <DataGridTextColumn Header="プロンプト" Binding="{Binding PromptLevel, Converter={StaticResource EnumToDisplay}}" Width="80"/>
+                                    <DataGridTextColumn Header="臨床メモ" Binding="{Binding ClinicalNote}" Width="200"/>
+                                    <DataGridTextColumn Header="仮説" Binding="{Binding Hypothesis}" Width="200"/>
+                                    <DataGridTextColumn Header="次回" Binding="{Binding NextAction}" Width="150"/>
+                                </DataGrid.Columns>
+                            </DataGrid>
+                        </TabItem>
+                        <TabItem Header="自然場面記録">
+                            <DataGrid ItemsSource="{Binding ChildObservations}" Margin="0,8,0,0">
+                                <DataGrid.Columns>
+                                    <DataGridTextColumn Header="日付" Binding="{Binding Date, StringFormat=yyyy/MM/dd}" Width="90"/>
+                                    <DataGridTextColumn Header="タイプ" Binding="{Binding ObservationType, Converter={StaticResource EnumToDisplay}}" Width="90"/>
+                                    <DataGridTextColumn Header="状況" Binding="{Binding Situation}" Width="200"/>
+                                    <DataGridTextColumn Header="観察された行動" Binding="{Binding ObservedBehavior}" Width="200"/>
+                                    <DataGridTextColumn Header="結果" Binding="{Binding Result, Converter={StaticResource EnumToDisplay}}" Width="80"/>
+                                    <DataGridTextColumn Header="臨床的解釈" Binding="{Binding Interpretation}" Width="200"/>
+                                    <DataGridTextColumn Header="次回検証" Binding="{Binding NextVerification}" Width="150"/>
+                                </DataGrid.Columns>
+                            </DataGrid>
+                        </TabItem>
+                    </TabControl>
+                </DockPanel>
+            </DockPanel>
+        </Border>
+
+        <!-- Placeholder when no child selected -->
+        <Border Grid.Column="1" Background="White" CornerRadius="8" Padding="20"
+                BorderBrush="{StaticResource BorderBrush}" BorderThickness="1"
+                Visibility="{Binding ShowDetailPanel, Converter={StaticResource InvBoolToVis}}">
+            <TextBlock Text="← 児童を選択してください" FontSize="14"
+                       Foreground="{StaticResource SubTextBrush}"
+                       VerticalAlignment="Center" HorizontalAlignment="Center"/>
+        </Border>
+    </Grid>
+</UserControl>

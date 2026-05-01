@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
+     xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui">
+
+  <Package Name="支援記録データベース"
+           Language="1041"
+           Codepage="932"
+           Version="1.0.0.0"
+           Manufacturer="SessionRecorder"
+           UpgradeCode="F452D054-6EC2-45A3-9D10-4A2EE35E8E31"
+           Scope="perMachine">
+
+    <MajorUpgrade DowngradeErrorMessage="より新しいバージョンが既にインストールされています。アンインストール後に再試行してください。" />
+    <MediaTemplate EmbedCab="yes" />
+
+    <!-- インストール先フォルダ選択UI -->
+    <ui:WixUI Id="WixUI_InstallDir" />
+    <Property Id="WIXUI_INSTALLDIR" Value="INSTALLFOLDER" />
+
+    <!-- ディレクトリ定義 -->
+    <StandardDirectory Id="ProgramFiles6432Folder">
+      <Directory Id="INSTALLFOLDER" Name="SessionRecorder" />
+    </StandardDirectory>
+
+    <StandardDirectory Id="ProgramMenuFolder">
+      <Directory Id="ApplicationProgramsFolder" Name="支援記録データベース" />
+    </StandardDirectory>
+
+    <StandardDirectory Id="DesktopFolder" />
+
+    <!-- スタートメニューショートカット -->
+    <Component Id="StartMenuShortcut" Directory="ApplicationProgramsFolder" Guid="*">
+      <Shortcut Id="AppStartMenuShortcut"
+                Name="支援記録データベース"
+                Target="[INSTALLFOLDER]SessionRecorder.App.exe"
+                WorkingDirectory="INSTALLFOLDER" />
+      <RemoveFolder Id="RemoveStartMenuFolder"
+                    Directory="ApplicationProgramsFolder"
+                    On="uninstall" />
+      <RegistryValue Root="HKCU"
+                     Key="Software\SessionRecorder"
+                     Name="StartMenuInstalled"
+                     Type="integer" Value="1"
+                     KeyPath="yes" />
+    </Component>
+
+    <!-- デスクトップショートカット -->
+    <Component Id="DesktopShortcut" Directory="DesktopFolder" Guid="*">
+      <Shortcut Id="AppDesktopShortcut"
+                Name="支援記録データベース"
+                Target="[INSTALLFOLDER]SessionRecorder.App.exe"
+                WorkingDirectory="INSTALLFOLDER" />
+      <RegistryValue Root="HKCU"
+                     Key="Software\SessionRecorder"
+                     Name="DesktopInstalled"
+                     Type="integer" Value="1"
+                     KeyPath="yes" />
+    </Component>
+
+    <!-- インストールする機能 -->
+    <Feature Id="MainFeature" Title="支援記録データベース" Level="1">
+      <ComponentGroupRef Id="AppFiles" />
+      <ComponentRef Id="StartMenuShortcut" />
+      <ComponentRef Id="DesktopShortcut" />
+    </Feature>
+
+  </Package>
+</Wix>

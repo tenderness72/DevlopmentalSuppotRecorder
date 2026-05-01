@@ -1,0 +1,66 @@
+<UserControl x:Class="SessionRecorder.App.Views.SearchView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Grid Margin="24,20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <TextBlock Grid.Row="0" Text="横断検索" FontSize="18" FontWeight="Bold"
+                   Foreground="{StaticResource TextBrush}" Margin="0,0,0,16"/>
+
+        <!-- Search bar -->
+        <Border Grid.Row="1" Background="White" CornerRadius="8" Padding="16" Margin="0,0,0,12"
+                BorderBrush="{StaticResource BorderBrush}" BorderThickness="1">
+            <StackPanel>
+                <TextBlock Style="{StaticResource FieldLabel}" Text="臨床メモ・仮説・状況・行動の横断検索"/>
+                <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                    <TextBox Text="{Binding SearchQuery, UpdateSourceTrigger=PropertyChanged}" Width="400"
+                             KeyDown="OnSearchKeyDown"/>
+                    <Button Content="検索" Style="{StaticResource PrimaryButton}" Margin="8,0,0,0"
+                            Command="{Binding SearchCommand}"/>
+                </StackPanel>
+                <TextBlock Text="{Binding ResultSummary}" FontSize="12" Foreground="{StaticResource SubTextBrush}"
+                           Margin="0,8,0,0"/>
+            </StackPanel>
+        </Border>
+
+        <!-- Results -->
+        <TabControl Grid.Row="2" BorderThickness="0">
+            <TabItem Header="セッション記録">
+                <Border Background="White" CornerRadius="8" Padding="4"
+                        BorderBrush="{StaticResource BorderBrush}" BorderThickness="1">
+                    <DataGrid ItemsSource="{Binding SessionResults}">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="日付" Binding="{Binding Date, StringFormat=yyyy/MM/dd}" Width="90"/>
+                            <DataGridTextColumn Header="児童" Binding="{Binding Child.Name}" Width="80"/>
+                            <DataGridTextColumn Header="課題名" Binding="{Binding Program.ProgramName}" Width="150"/>
+                            <DataGridTextColumn Header="正答率" Binding="{Binding CorrectRate, Converter={StaticResource Percentage}}" Width="60"/>
+                            <DataGridTextColumn Header="臨床メモ" Binding="{Binding ClinicalNote}" Width="250"/>
+                            <DataGridTextColumn Header="仮説" Binding="{Binding Hypothesis}" Width="200"/>
+                            <DataGridTextColumn Header="次回" Binding="{Binding NextAction}" Width="150"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </Border>
+            </TabItem>
+            <TabItem Header="自然場面記録">
+                <Border Background="White" CornerRadius="8" Padding="4"
+                        BorderBrush="{StaticResource BorderBrush}" BorderThickness="1">
+                    <DataGrid ItemsSource="{Binding ObservationResults}">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="日付" Binding="{Binding Date, StringFormat=yyyy/MM/dd}" Width="90"/>
+                            <DataGridTextColumn Header="児童" Binding="{Binding Child.Name}" Width="80"/>
+                            <DataGridTextColumn Header="タイプ" Binding="{Binding ObservationType, Converter={StaticResource EnumToDisplay}}" Width="80"/>
+                            <DataGridTextColumn Header="状況" Binding="{Binding Situation}" Width="200"/>
+                            <DataGridTextColumn Header="行動" Binding="{Binding ObservedBehavior}" Width="200"/>
+                            <DataGridTextColumn Header="解釈" Binding="{Binding Interpretation}" Width="200"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </Border>
+            </TabItem>
+        </TabControl>
+    </Grid>
+</UserControl>

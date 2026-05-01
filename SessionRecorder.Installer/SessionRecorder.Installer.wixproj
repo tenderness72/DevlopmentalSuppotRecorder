@@ -1,0 +1,33 @@
+<Project Sdk="WixToolset.Sdk/4.0.5">
+  <PropertyGroup>
+    <OutputName>SessionRecorder_Setup</OutputName>
+    <Platform>x64</Platform>
+    <Configurations>Release</Configurations>
+    <SolutionRootDir>$([System.IO.Path]::GetFullPath($(MSBuildThisFileDirectory)..))</SolutionRootDir>
+    <InstallerDir>$(MSBuildThisFileDirectory)</InstallerDir>
+    <TempLauncher>$(InstallerDir)_launch_gen.bat</TempLauncher>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="WixToolset.UI.wixext" Version="4.0.5" />
+    <PackageReference Include="WixToolset.Util.wixext" Version="4.0.5" />
+  </ItemGroup>
+
+  <!--
+    Visual Studio でビルドすると自動的に：
+      1. SessionRecorder.App を発行 (win-x64, self-contained)
+      2. Components.wxs を生成
+      3. MSI をビルド
+  -->
+  <Target Name="PrepareInstaller" BeforeTargets="CoreCompile">
+
+    <!-- バッチファイルに env var を設定してPSスクリプトを呼ぶ1行を書き込む -->
+    <WriteLinesToFile File="$(TempLauncher)" Overwrite="true"
+      Lines="@echo off%0Aset SESSION_RECORDER_ROOT=$(SolutionRootDir)%0Apowershell -ExecutionPolicy Bypass -File &quot;$(InstallerDir)generate-components.ps1&quot;%0Aexit /b %ERRORLEVEL%" />
+
+    <Exec Command="&quot;$(TempLauncher)&quot;" WorkingDirectory="$(InstallerDir)" />
+    <Delete Files="$(TempLauncher)" ContinueOnError="true" />
+
+  </Target>
+
+</Project>

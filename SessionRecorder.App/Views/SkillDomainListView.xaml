@@ -1,0 +1,105 @@
+<UserControl x:Class="SessionRecorder.App.Views.SkillDomainListView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Loaded="OnLoaded">
+    <Grid Margin="24,20">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="360"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+
+        <!-- Left: Domain list -->
+        <DockPanel Grid.Column="0" Margin="0,0,16,0">
+            <StackPanel DockPanel.Dock="Top" Margin="0,0,0,12">
+                <TextBlock Text="領域管理" FontSize="18" FontWeight="Bold" Foreground="{StaticResource TextBrush}"/>
+                <TextBlock Text="アプリ内から領域の追加・編集・削除ができます"
+                           FontSize="12" Foreground="{StaticResource SubTextBrush}" Margin="0,4,0,8"/>
+                <Button Content="＋ 新規追加" Style="{StaticResource PrimaryButton}"
+                        Command="{Binding NewDomainCommand}" HorizontalAlignment="Left"/>
+            </StackPanel>
+
+            <!-- Status message -->
+            <Border DockPanel.Dock="Top" Background="#FEF3C7" CornerRadius="6" Padding="12,8"
+                    Margin="0,0,0,8"
+                    Visibility="{Binding StatusMessage, Converter={StaticResource StringToVis}}">
+                <TextBlock Text="{Binding StatusMessage}" FontSize="12" Foreground="#92400E" TextWrapping="Wrap"/>
+            </Border>
+
+            <Border Background="White" CornerRadius="8" Padding="4"
+                    BorderBrush="{StaticResource BorderBrush}" BorderThickness="1">
+                <ListBox ItemsSource="{Binding Domains}" SelectedItem="{Binding SelectedDomain}"
+                         BorderThickness="0" Background="Transparent">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <Border Padding="10,8" Margin="0,1">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="{Binding DomainCode}" FontSize="11"
+                                               Foreground="{StaticResource SubTextBrush}" Width="48"/>
+                                    <TextBlock Text="{Binding DomainName}" FontSize="13"/>
+                                </StackPanel>
+                            </Border>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </Border>
+        </DockPanel>
+
+        <!-- Right: Edit form / detail -->
+        <Border Grid.Column="1" Background="White" CornerRadius="8" Padding="20"
+                BorderBrush="{StaticResource BorderBrush}" BorderThickness="1">
+            <Grid>
+            <!-- Placeholder -->
+            <TextBlock Text="← 領域を選択、または「新規追加」してください"
+                       FontSize="14" Foreground="{StaticResource SubTextBrush}"
+                       VerticalAlignment="Center" HorizontalAlignment="Center"
+                       Visibility="{Binding IsEditing, Converter={StaticResource InvBoolToVis}}"/>
+
+            <!-- Edit form -->
+            <StackPanel MaxWidth="420" HorizontalAlignment="Left"
+                        Visibility="{Binding IsEditing, Converter={StaticResource BoolToVis}}">
+                <TextBlock FontSize="15" FontWeight="SemiBold" Margin="0,0,0,16">
+                    <Run Text="{Binding IsNewDomain, Converter={StaticResource BoolToNewEdit}, Mode=OneWay}"/>
+                    <Run Text=" — 領域"/>
+                </TextBlock>
+
+                <TextBlock Style="{StaticResource FieldLabel}" Text="領域コード（自動採番）"/>
+                <TextBox Text="{Binding EditDomainCode, UpdateSourceTrigger=PropertyChanged}"
+                         IsReadOnly="True" Background="#F9FAFB" Margin="0,0,0,12"/>
+
+                <TextBlock Style="{StaticResource FieldLabel}" Text="領域名"/>
+                <TextBox Text="{Binding EditDomainName, UpdateSourceTrigger=PropertyChanged}"
+                         Margin="0,0,0,12"/>
+
+                <TextBlock Style="{StaticResource FieldLabel}" Text="備考（任意）"/>
+                <TextBox Text="{Binding EditNotes, UpdateSourceTrigger=PropertyChanged}"
+                         TextWrapping="Wrap" AcceptsReturn="True" Height="60" Margin="0,0,0,16"/>
+
+                <StackPanel Orientation="Horizontal">
+                    <Button Content="保存" Style="{StaticResource PrimaryButton}"
+                            Command="{Binding SaveDomainCommand}"/>
+                    <Button Content="キャンセル" Style="{StaticResource SecondaryButton}"
+                            Margin="8,0,0,0" Command="{Binding CancelEditCommand}"/>
+                </StackPanel>
+
+                <!-- Edit/Delete buttons (shown when existing domain selected) -->
+                <StackPanel Orientation="Horizontal" Margin="0,16,0,0"
+                            Visibility="{Binding IsNewDomain, Converter={StaticResource InvBoolToVis}}">
+                    <Button Content="この領域を削除" Cursor="Hand"
+                            Background="#FEE2E2" Foreground="#DC2626"
+                            BorderThickness="0" Padding="12,8"
+                            Command="{Binding DeleteDomainCommand}">
+                        <Button.Template>
+                            <ControlTemplate TargetType="Button">
+                                <Border Background="{TemplateBinding Background}"
+                                        CornerRadius="6" Padding="{TemplateBinding Padding}">
+                                    <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+                            </ControlTemplate>
+                        </Button.Template>
+                    </Button>
+                </StackPanel>
+            </StackPanel>
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>

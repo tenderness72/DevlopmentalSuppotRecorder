@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dotnet build *)",
+      "Bash(dotnet run *)",
+      "Bash(tasklist)",
+      "Bash(tasklist /FI \"IMAGENAME eq SessionRecorder*\")",
+      "Read(//c/Users/N/Desktop/SessionRecorder_v2/SessionRecorder/%LOCALAPPDATA%/SessionRecorder\" 2>/dev/**)",
+      "Bash(start dotnet *)",
+      "Bash(powershell -Command 'Get-Process | Where-Object { $_.MainWindowTitle -ne '\\\\'''\\\\'' } | Select-Object Name,MainWindowTitle')",
+      "PowerShell(Stop-Process -Force)",
+      "PowerShell(\"Stopped old processes\")",
+      "Bash(powershell -Command 'Get-Process | Where-Object { $_.MainWindowTitle -like '\\\\''*支援*'\\\\'' } | Select-Object Name,MainWindowTitle')",
+      "WebFetch(domain:zenn.dev)",
+      "Bash(dotnet tool *)",
+      "Bash(wix --version)",
+      "Bash(iscc /?)",
+      "Bash(powershell -Command \"Get-Command iscc -ErrorAction SilentlyContinue\")",
+      "PowerShell([System.Guid]::NewGuid\\(\\).ToString\\(\\).ToUpper\\(\\))",
+      "PowerShell(Get-Item \"C:\\\\Users\\\\N\\\\Desktop\\\\SessionRecorder_v2\\\\SessionRecorder\\\\SessionRecorder.Installer\\\\bin\\\\x64\\\\Release\\\\SessionRecorder_Setup.msi\" | Select-Object FullName, @{N=\"SizeMB\";E={[math]::Round\\($_.Length/1MB,1\\)}}, LastWriteTime)"
+    ]
+  }
+}
