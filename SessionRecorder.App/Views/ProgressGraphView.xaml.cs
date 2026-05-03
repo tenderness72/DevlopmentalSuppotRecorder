@@ -4,18 +4,17 @@ using SessionRecorder.App.ViewModels;
 
 namespace SessionRecorder.App.Views;
 
-public partial class SessionEntryView : UserControl
+public partial class ProgressGraphView : UserControl
 {
-    public SessionEntryView()
+    public ProgressGraphView()
     {
         InitializeComponent();
         IsVisibleChanged += OnIsVisibleChanged;
     }
 
-    // 初回表示・再表示どちらでも LoadAsync を呼ぶ
     private async void OnIsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
     {
-        if (e.NewValue is true && DataContext is SessionEntryViewModel vm)
+        if (e.NewValue is true && DataContext is ProgressGraphViewModel vm)
             await vm.LoadCommand.ExecuteAsync(null);
     }
 }

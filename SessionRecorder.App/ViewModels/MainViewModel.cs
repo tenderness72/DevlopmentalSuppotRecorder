@@ -14,6 +14,8 @@ public partial class MainViewModel : ObservableObject
     public ObservationEntryViewModel ObservationEntryVm { get; }
     public SearchViewModel SearchVm { get; }
     public SkillDomainListViewModel SkillDomainListVm { get; }
+    public SessionListViewModel SessionListVm { get; }
+    public ProgressGraphViewModel ProgressGraphVm { get; }
 
     public MainViewModel(
         ChildListViewModel childListVm,
@@ -21,7 +23,9 @@ public partial class MainViewModel : ObservableObject
         SessionEntryViewModel sessionEntryVm,
         ObservationEntryViewModel observationEntryVm,
         SearchViewModel searchVm,
-        SkillDomainListViewModel skillDomainListVm)
+        SkillDomainListViewModel skillDomainListVm,
+        SessionListViewModel sessionListVm,
+        ProgressGraphViewModel progressGraphVm)
     {
         ChildListVm = childListVm;
         ProgramListVm = programListVm;
@@ -29,9 +33,17 @@ public partial class MainViewModel : ObservableObject
         ObservationEntryVm = observationEntryVm;
         SearchVm = searchVm;
         SkillDomainListVm = skillDomainListVm;
+        SessionListVm = sessionListVm;
+        ProgressGraphVm = progressGraphVm;
 
         ChildListVm.ChildSelected += child =>
             StatusMessage = $"{child.ChildCode} {child.Name} を選択中";
+
+        SessionListVm.EditSessionRequested += record =>
+        {
+            SessionEntryVm.PrepareEdit(record);
+            CurrentView = SessionEntryVm;
+        };
 
         CurrentView = ChildListVm;
     }
@@ -42,4 +54,6 @@ public partial class MainViewModel : ObservableObject
     [RelayCommand] private void NavigateToObservationEntry() => CurrentView = ObservationEntryVm;
     [RelayCommand] private void NavigateToSearch() => CurrentView = SearchVm;
     [RelayCommand] private void NavigateToSkillDomains() => CurrentView = SkillDomainListVm;
+    [RelayCommand] private void NavigateToSessionList() => CurrentView = SessionListVm;
+    [RelayCommand] private void NavigateToProgressGraph() => CurrentView = ProgressGraphVm;
 }

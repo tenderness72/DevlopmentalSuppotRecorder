@@ -37,6 +37,7 @@ public interface IProgramRepository
 
 public interface ISessionRecordRepository
 {
+    Task<List<SessionRecord>> GetAllAsync();
     Task<List<SessionRecord>> GetByChildIdAsync(int childId);
     Task<List<SessionRecord>> GetByDateRangeAsync(DateTime from, DateTime to);
     Task<SessionRecord?> GetByIdAsync(int id);
@@ -192,6 +193,14 @@ public class ProgramRepository(AppDbContext db) : IProgramRepository
 
 public class SessionRecordRepository(AppDbContext db) : ISessionRecordRepository
 {
+    public async Task<List<SessionRecord>> GetAllAsync() =>
+        await db.SessionRecords
+            .Include(s => s.Program).ThenInclude(p => p.Domain)
+            .Include(s => s.Child)
+            .OrderByDescending(s => s.Date)
+            .ThenBy(s => s.Child.Name)
+            .ToListAsync();
+
     public async Task<List<SessionRecord>> GetByChildIdAsync(int childId) =>
         await db.SessionRecords
             .Include(s => s.Program)

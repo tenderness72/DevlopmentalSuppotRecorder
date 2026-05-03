@@ -24,6 +24,12 @@
         <DataTemplate DataType="{x:Type vm:SkillDomainListViewModel}">
             <views:SkillDomainListView/>
         </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:SessionListViewModel}">
+            <views:SessionListView/>
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:ProgressGraphViewModel}">
+            <views:ProgressGraphView/>
+        </DataTemplate>
     </Window.Resources>
 
     <Grid>
@@ -55,6 +61,8 @@
                     <Separator Background="#374151" Margin="12,12"/>
 
                     <TextBlock Text="分析" FontSize="10" Foreground="#6B7280" Margin="12,0,0,6" FontWeight="SemiBold"/>
+                    <Button Content="📈 進捗グラフ" Style="{StaticResource NavButton}" Command="{Binding NavigateToProgressGraphCommand}"/>
+                    <Button Content="📊 セッション一覧" Style="{StaticResource NavButton}" Command="{Binding NavigateToSessionListCommand}"/>
                     <Button Content="🔍 横断検索" Style="{StaticResource NavButton}" Command="{Binding NavigateToSearchCommand}"/>
                 </StackPanel>
 

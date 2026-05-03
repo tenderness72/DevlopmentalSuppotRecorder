@@ -35,6 +35,9 @@ public partial class SessionEntryViewModel : ObservableObject
     [ObservableProperty] private bool _isEditMode;
     [ObservableProperty] private int _editingRecordId;
 
+    // セッション一覧から遷移時、Load後に適用する編集レコード
+    private SessionRecord? _pendingEditRecord;
+
     public string CorrectRateDisplay =>
         (TrialCount.HasValue && TrialCount > 0 && CorrectCount.HasValue)
             ? $"{(double)CorrectCount.Value / TrialCount.Value:P0}"
@@ -53,6 +56,9 @@ public partial class SessionEntryViewModel : ObservableObject
     partial void OnTrialCountChanged(int? value) => OnPropertyChanged(nameof(CorrectRateDisplay));
     partial void OnCorrectCountChanged(int? value) => OnPropertyChanged(nameof(CorrectRateDisplay));
 
+    /// <summary>セッション一覧からの遷移時に呼ぶ。Load完了後にフォームを自動セットする。</summary>
+    public void PrepareEdit(SessionRecord record) => _pendingEditRecord = record;
+
     [RelayCommand]
     private async Task LoadAsync()
     {
@@ -64,6 +70,13 @@ public partial class SessionEntryViewModel : ObservableObject
 
         var programs = await _programRepo.GetAllAsync();
         foreach (var p in programs) Programs.Add(p);
+
+        // 一覧画面からの編集遷移：コレクション確定後に適用
+        if (_pendingEditRecord != null)
+        {
+            EditRecordCommand.Execute(_pendingEditRecord);
+            _pendingEditRecord = null;
+        }
     }
 
     async partial void OnSelectedChildChanged(Child? value)

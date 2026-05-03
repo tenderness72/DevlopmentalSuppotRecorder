@@ -6,3 +6,15 @@ obj/
 # ユーザー固有の設定など
 *.user
 *.suo
+
+# ビルド成果物（バイナリ・MSI）
+publish/
+installer/
+SessionRecorder.Installer/Components.wxs
+SessionRecorder.Installer/bin/
+SessionRecorder.Installer/_launch_gen.bat
+
+# データベース・バックアップ
+*.db
+*.db-shm
+*.db-wal
