@@ -13,9 +13,11 @@ namespace SessionRecorder.App.ViewModels;
 
 public partial class SessionListViewModel : ObservableObject
 {
-    private readonly ISessionRecordRepository _sessionRepo;
-    private readonly IChildRepository _childRepo;
-    private readonly IFileDialogService _fileDialog;
+    private readonly ISessionRecordRepository      _sessionRepo;
+    private readonly IChildRepository              _childRepo;
+    private readonly INaturalObservationRepository _obsRepo;
+    private readonly ExcelExportService            _excelService;
+    private readonly IFileDialogService            _fileDialog;
 
     private List<SessionRecord> _allRecords = [];
 
@@ -25,20 +27,30 @@ public partial class SessionListViewModel : ObservableObject
     public ObservableCollection<SessionRecord> DisplayRecords { get; } = [];
     public ObservableCollection<Child?> Children { get; } = [];
 
-    [ObservableProperty] private Child? _selectedChild;
+    [ObservableProperty] private Child?    _selectedChild;
     [ObservableProperty] private DateTime? _dateFrom;
     [ObservableProperty] private DateTime? _dateTo;
-    [ObservableProperty] private string _statusText = "";
-    [ObservableProperty] private bool _isLoading;
+    [ObservableProperty] private string    _statusText = "";
+    [ObservableProperty] private bool      _isLoading;
+
+    // Excel 出力は児童が選択されているときのみ有効
+    public bool CanExportExcel => SelectedChild != null;
+
+    partial void OnSelectedChildChanged(Child? value) =>
+        OnPropertyChanged(nameof(CanExportExcel));
 
     public SessionListViewModel(
         ISessionRecordRepository sessionRepo,
         IChildRepository childRepo,
+        INaturalObservationRepository obsRepo,
+        ExcelExportService excelService,
         IFileDialogService fileDialog)
     {
-        _sessionRepo = sessionRepo;
-        _childRepo = childRepo;
-        _fileDialog = fileDialog;
+        _sessionRepo  = sessionRepo;
+        _childRepo    = childRepo;
+        _obsRepo      = obsRepo;
+        _excelService = excelService;
+        _fileDialog   = fileDialog;
     }
 
     [RelayCommand]
@@ -104,8 +116,8 @@ public partial class SessionListViewModel : ObservableObject
     private void ClearFilter()
     {
         SelectedChild = null;
-        DateFrom = null;
-        DateTo = null;
+        DateFrom      = null;
+        DateTo        = null;
         ApplyFilter();
     }
 
@@ -134,17 +146,47 @@ public partial class SessionListViewModel : ObservableObject
         }
     }
 
+    [RelayCommand]
+    private async Task ExportExcelAsync()
+    {
+        if (SelectedChild == null)
+        {
+            StatusText = "Excel 出力は児童を絞り込んでから実行してください";
+            return;
+        }
+
+        var defaultName = $"{SelectedChild.ChildCode}_{SelectedChild.Name}_{DateTime.Today:yyyyMMdd}";
+        var path = _fileDialog.ShowSaveExcelDialog(defaultName);
+        if (path == null) return;
+
+        try
+        {
+            IsLoading = true;
+            var sessions = _allRecords
+                .Where(s => s.ChildId == SelectedChild.Id)
+                .OrderBy(s => s.Date)
+                .ToList();
+            var observations = await _obsRepo.GetByChildIdAsync(SelectedChild.Id);
+            _excelService.ExportChildSessions(SelectedChild, sessions, observations, path);
+            StatusText = $"Excel 出力完了: {Path.GetFileName(path)}";
+        }
+        catch (Exception ex)
+        {
+            StatusText = $"エラー: {ex.Message}";
+        }
+        finally { IsLoading = false; }
+    }
+
     private static string BuildCsv(IEnumerable<SessionRecord> records)
     {
         var sb = new StringBuilder();
-        // Header
         sb.AppendLine("日付,児童コード,児童名,プログラムコード,課題名,領域,試行数,正答数,正答率,習得レベル,プロンプトレベル,臨床メモ,仮説,次回");
 
         foreach (var r in records)
         {
-            var rate = r.CorrectRate.HasValue ? $"{r.CorrectRate.Value:P0}" : "";
+            var rate    = r.CorrectRate.HasValue ? $"{r.CorrectRate.Value:P0}" : "";
             var mastery = r.MasteryLevel.HasValue ? EnumHelper.GetDisplayName(r.MasteryLevel.Value) : "";
-            var prompt = r.PromptLevel.HasValue ? EnumHelper.GetDisplayName(r.PromptLevel.Value) : "";
+            var prompt  = r.PromptLevel.HasValue  ? EnumHelper.GetDisplayName(r.PromptLevel.Value)  : "";
 
             sb.AppendLine(string.Join(",",
                 Q(r.Date.ToString("yyyy/MM/dd")),
@@ -153,21 +195,20 @@ public partial class SessionListViewModel : ObservableObject
                 Q(r.Program?.ProgramCode ?? ""),
                 Q(r.Program?.ProgramName ?? ""),
                 Q(r.Program?.Domain?.DomainName ?? ""),
-                r.TrialCount?.ToString() ?? "",
+                r.TrialCount?.ToString()   ?? "",
                 r.CorrectCount?.ToString() ?? "",
                 Q(rate),
                 Q(mastery),
                 Q(prompt),
                 Q(r.ClinicalNote ?? ""),
-                Q(r.Hypothesis ?? ""),
-                Q(r.NextAction ?? "")
+                Q(r.Hypothesis   ?? ""),
+                Q(r.NextAction   ?? "")
             ));
         }
 
         return sb.ToString();
     }
 
-    // CSV フィールドのクォート処理
     private static string Q(string value)
     {
         if (value.Contains(',') || value.Contains('"') || value.Contains('\n'))

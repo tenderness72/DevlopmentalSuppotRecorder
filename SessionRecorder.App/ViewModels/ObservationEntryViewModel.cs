@@ -13,31 +13,37 @@ public partial class ObservationEntryViewModel : ObservableObject
     private readonly IChildRepository _childRepo;
     private readonly INaturalObservationRepository _obsRepo;
 
+    // 一覧画面から編集要求があったとき、LoadAsync 完了まで保持する
+    private NaturalObservation? _pendingEditObs;
+
     public ObservableCollection<Child> Children { get; } = [];
     public ObservableCollection<NaturalObservation> RecentObservations { get; } = [];
 
     public List<EnumItem<ObservationType>> ObservationTypes { get; } = EnumHelper.GetItems<ObservationType>();
-    public List<EnumItem<ResponseResult>> ResponseResults { get; } = EnumHelper.GetItems<ResponseResult>();
+    public List<EnumItem<ResponseResult>> ResponseResults  { get; } = EnumHelper.GetItems<ResponseResult>();
 
-    [ObservableProperty] private Child? _selectedChild;
-    [ObservableProperty] private DateTime _date = DateTime.Today;
+    [ObservableProperty] private Child?          _selectedChild;
+    [ObservableProperty] private DateTime        _date = DateTime.Today;
     [ObservableProperty] private ObservationType _observationType = ObservationType.Natural;
-    [ObservableProperty] private string? _situation;
-    [ObservableProperty] private string? _observedBehavior;
+    [ObservableProperty] private string?         _situation;
+    [ObservableProperty] private string?         _observedBehavior;
     [ObservableProperty] private ResponseResult? _result;
-    [ObservableProperty] private string? _interpretation;
-    [ObservableProperty] private string? _nextVerification;
-    [ObservableProperty] private string _saveMessage = "";
-    [ObservableProperty] private bool _isEditMode;
-    [ObservableProperty] private int _editingObsId;
+    [ObservableProperty] private string?         _interpretation;
+    [ObservableProperty] private string?         _nextVerification;
+    [ObservableProperty] private string          _saveMessage = "";
+    [ObservableProperty] private bool            _isEditMode;
+    [ObservableProperty] private int             _editingObsId;
 
     public ObservationEntryViewModel(
         IChildRepository childRepo,
         INaturalObservationRepository obsRepo)
     {
         _childRepo = childRepo;
-        _obsRepo = obsRepo;
+        _obsRepo   = obsRepo;
     }
+
+    /// <summary>一覧画面から「編集」ボタンが押されたとき呼ばれる（LoadAsync の前に呼ぶ）</summary>
+    public void PrepareEdit(NaturalObservation obs) => _pendingEditObs = obs;
 
     [RelayCommand]
     private async Task LoadAsync()
@@ -45,6 +51,13 @@ public partial class ObservationEntryViewModel : ObservableObject
         Children.Clear();
         var children = await _childRepo.GetAllAsync();
         foreach (var c in children) Children.Add(c);
+
+        // 一覧から編集要求があれば、コレクション準備後に適用
+        if (_pendingEditObs != null)
+        {
+            EditObservation(_pendingEditObs);
+            _pendingEditObs = null;
+        }
     }
 
     async partial void OnSelectedChildChanged(Child? value)
@@ -69,13 +82,13 @@ public partial class ObservationEntryViewModel : ObservableObject
             var obs = await _obsRepo.GetByIdAsync(EditingObsId);
             if (obs != null)
             {
-                obs.Date = Date;
-                obs.ChildId = SelectedChild.Id;
-                obs.ObservationType = ObservationType;
-                obs.Situation = Situation;
+                obs.Date             = Date;
+                obs.ChildId          = SelectedChild.Id;
+                obs.ObservationType  = ObservationType;
+                obs.Situation        = Situation;
                 obs.ObservedBehavior = ObservedBehavior;
-                obs.Result = Result;
-                obs.Interpretation = Interpretation;
+                obs.Result           = Result;
+                obs.Interpretation   = Interpretation;
                 obs.NextVerification = NextVerification;
                 await _obsRepo.UpdateAsync(obs);
                 SaveMessage = "記録を更新しました";
@@ -86,13 +99,13 @@ public partial class ObservationEntryViewModel : ObservableObject
         {
             var obs = new NaturalObservation
             {
-                Date = Date,
-                ChildId = SelectedChild.Id,
-                ObservationType = ObservationType,
-                Situation = Situation,
+                Date             = Date,
+                ChildId          = SelectedChild.Id,
+                ObservationType  = ObservationType,
+                Situation        = Situation,
                 ObservedBehavior = ObservedBehavior,
-                Result = Result,
-                Interpretation = Interpretation,
+                Result           = Result,
+                Interpretation   = Interpretation,
                 NextVerification = NextVerification
             };
             await _obsRepo.AddAsync(obs);
@@ -112,15 +125,15 @@ public partial class ObservationEntryViewModel : ObservableObject
     [RelayCommand]
     private void EditObservation(NaturalObservation obs)
     {
-        IsEditMode = true;
-        EditingObsId = obs.Id;
-        SelectedChild = Children.FirstOrDefault(c => c.Id == obs.ChildId);
-        Date = obs.Date;
-        ObservationType = obs.ObservationType;
-        Situation = obs.Situation;
+        IsEditMode       = true;
+        EditingObsId     = obs.Id;
+        SelectedChild    = Children.FirstOrDefault(c => c.Id == obs.ChildId);
+        Date             = obs.Date;
+        ObservationType  = obs.ObservationType;
+        Situation        = obs.Situation;
         ObservedBehavior = obs.ObservedBehavior;
-        Result = obs.Result;
-        Interpretation = obs.Interpretation;
+        Result           = obs.Result;
+        Interpretation   = obs.Interpretation;
         NextVerification = obs.NextVerification;
     }
 
@@ -135,11 +148,11 @@ public partial class ObservationEntryViewModel : ObservableObject
     [RelayCommand]
     private void ClearForm()
     {
-        Situation = null;
+        Situation        = null;
         ObservedBehavior = null;
-        Result = null;
-        Interpretation = null;
+        Result           = null;
+        Interpretation   = null;
         NextVerification = null;
-        IsEditMode = false;
+        IsEditMode       = false;
     }
 }

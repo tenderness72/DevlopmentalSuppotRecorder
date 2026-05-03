@@ -22,7 +22,6 @@ public partial class App : Application
         base.OnStartup(e);
 
         // LiveCharts2 初期化 + 日本語フォント設定
-        // SkiaSharp は Windows 標準フォントを自動認識しないため明示指定が必要
         var jpTypeface =
             SKTypeface.FromFamilyName("Yu Gothic UI", SKFontStyle.Normal) ??
             SKTypeface.FromFamilyName("Meiryo UI",    SKFontStyle.Normal) ??
@@ -45,11 +44,11 @@ public partial class App : Application
         services.AddDbContext<AppDbContext>(options => options.UseSqlite($"Data Source={dbPath}"));
 
         // Repositories
-        services.AddScoped<IChildRepository, ChildRepository>();
-        services.AddScoped<IProgramRepository, ProgramRepository>();
-        services.AddScoped<ISessionRecordRepository, SessionRecordRepository>();
+        services.AddScoped<IChildRepository,              ChildRepository>();
+        services.AddScoped<IProgramRepository,            ProgramRepository>();
+        services.AddScoped<ISessionRecordRepository,      SessionRecordRepository>();
         services.AddScoped<INaturalObservationRepository, NaturalObservationRepository>();
-        services.AddScoped<ISkillDomainRepository, SkillDomainRepository>();
+        services.AddScoped<ISkillDomainRepository,        SkillDomainRepository>();
 
         // Services
         services.AddSingleton<BackupService>();
@@ -65,7 +64,9 @@ public partial class App : Application
         services.AddTransient<SearchViewModel>();
         services.AddTransient<SkillDomainListViewModel>();
         services.AddTransient<SessionListViewModel>();
+        services.AddTransient<ObservationListViewModel>();
         services.AddTransient<ProgressGraphViewModel>();
+        services.AddTransient<BackupViewModel>();
 
         // Views
         services.AddTransient<MainWindow>();

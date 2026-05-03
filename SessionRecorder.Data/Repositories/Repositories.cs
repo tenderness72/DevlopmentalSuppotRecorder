@@ -49,6 +49,7 @@ public interface ISessionRecordRepository
 
 public interface INaturalObservationRepository
 {
+    Task<List<NaturalObservation>> GetAllAsync();
     Task<List<NaturalObservation>> GetByChildIdAsync(int childId);
     Task<NaturalObservation?> GetByIdAsync(int id);
     Task AddAsync(NaturalObservation observation);
@@ -259,6 +260,13 @@ public class SessionRecordRepository(AppDbContext db) : ISessionRecordRepository
 
 public class NaturalObservationRepository(AppDbContext db) : INaturalObservationRepository
 {
+    public async Task<List<NaturalObservation>> GetAllAsync() =>
+        await db.NaturalObservations
+            .Include(o => o.Child)
+            .OrderByDescending(o => o.Date)
+            .ThenBy(o => o.Child.Name)
+            .ToListAsync();
+
     public async Task<List<NaturalObservation>> GetByChildIdAsync(int childId) =>
         await db.NaturalObservations
             .Include(o => o.Child)

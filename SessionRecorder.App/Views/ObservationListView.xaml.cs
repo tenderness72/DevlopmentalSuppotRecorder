@@ -4,9 +4,9 @@ using SessionRecorder.App.ViewModels;
 
 namespace SessionRecorder.App.Views;
 
-public partial class ObservationEntryView : UserControl
+public partial class ObservationListView : UserControl
 {
-    public ObservationEntryView()
+    public ObservationListView()
     {
         InitializeComponent();
         IsVisibleChanged += OnIsVisibleChanged;
@@ -14,7 +14,7 @@ public partial class ObservationEntryView : UserControl
 
     private async void OnIsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
     {
-        if (e.NewValue is true && DataContext is ObservationEntryViewModel vm)
+        if (e.NewValue is true && DataContext is ObservationListViewModel vm)
             await vm.LoadCommand.ExecuteAsync(null);
     }
 }

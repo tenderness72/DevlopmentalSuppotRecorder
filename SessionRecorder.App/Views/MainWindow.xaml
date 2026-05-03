@@ -27,8 +27,14 @@
         <DataTemplate DataType="{x:Type vm:SessionListViewModel}">
             <views:SessionListView/>
         </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:ObservationListViewModel}">
+            <views:ObservationListView/>
+        </DataTemplate>
         <DataTemplate DataType="{x:Type vm:ProgressGraphViewModel}">
             <views:ProgressGraphView/>
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:BackupViewModel}">
+            <views:BackupView/>
         </DataTemplate>
     </Window.Resources>
 
@@ -48,22 +54,28 @@
 
                 <StackPanel Margin="8,0">
                     <TextBlock Text="管理" FontSize="10" Foreground="#6B7280" Margin="12,0,0,6" FontWeight="SemiBold"/>
-                    <Button Content="👤 児童一覧" Style="{StaticResource NavButton}" Command="{Binding NavigateToChildrenCommand}"/>
+                    <Button Content="👤 児童一覧"     Style="{StaticResource NavButton}" Command="{Binding NavigateToChildrenCommand}"/>
                     <Button Content="📋 プログラム管理" Style="{StaticResource NavButton}" Command="{Binding NavigateToProgramsCommand}"/>
-                    <Button Content="🏷 領域管理" Style="{StaticResource NavButton}" Command="{Binding NavigateToSkillDomainsCommand}"/>
+                    <Button Content="🏷 領域管理"     Style="{StaticResource NavButton}" Command="{Binding NavigateToSkillDomainsCommand}"/>
 
                     <Separator Background="#374151" Margin="12,12"/>
 
                     <TextBlock Text="記録" FontSize="10" Foreground="#6B7280" Margin="12,0,0,6" FontWeight="SemiBold"/>
-                    <Button Content="📝 セッション入力" Style="{StaticResource NavButton}" Command="{Binding NavigateToSessionEntryCommand}"/>
-                    <Button Content="👁 自然場面入力" Style="{StaticResource NavButton}" Command="{Binding NavigateToObservationEntryCommand}"/>
+                    <Button Content="📝 セッション入力"  Style="{StaticResource NavButton}" Command="{Binding NavigateToSessionEntryCommand}"/>
+                    <Button Content="👁 自然場面入力"   Style="{StaticResource NavButton}" Command="{Binding NavigateToObservationEntryCommand}"/>
 
                     <Separator Background="#374151" Margin="12,12"/>
 
                     <TextBlock Text="分析" FontSize="10" Foreground="#6B7280" Margin="12,0,0,6" FontWeight="SemiBold"/>
-                    <Button Content="📈 進捗グラフ" Style="{StaticResource NavButton}" Command="{Binding NavigateToProgressGraphCommand}"/>
+                    <Button Content="📈 進捗グラフ"    Style="{StaticResource NavButton}" Command="{Binding NavigateToProgressGraphCommand}"/>
                     <Button Content="📊 セッション一覧" Style="{StaticResource NavButton}" Command="{Binding NavigateToSessionListCommand}"/>
-                    <Button Content="🔍 横断検索" Style="{StaticResource NavButton}" Command="{Binding NavigateToSearchCommand}"/>
+                    <Button Content="👁 自然場面一覧"   Style="{StaticResource NavButton}" Command="{Binding NavigateToObservationListCommand}"/>
+                    <Button Content="🔍 横断検索"      Style="{StaticResource NavButton}" Command="{Binding NavigateToSearchCommand}"/>
+
+                    <Separator Background="#374151" Margin="12,12"/>
+
+                    <TextBlock Text="設定" FontSize="10" Foreground="#6B7280" Margin="12,0,0,6" FontWeight="SemiBold"/>
+                    <Button Content="💾 バックアップ"  Style="{StaticResource NavButton}" Command="{Binding NavigateToBackupCommand}"/>
                 </StackPanel>
 
                 <TextBlock DockPanel.Dock="Bottom" Text="{Binding StatusMessage}"
