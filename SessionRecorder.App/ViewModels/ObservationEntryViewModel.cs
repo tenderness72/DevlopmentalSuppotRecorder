@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using SessionRecorder.App.Converters;
@@ -8,20 +9,43 @@ using SessionRecorder.Data.Repositories;
 
 namespace SessionRecorder.App.ViewModels;
 
-public partial class ObservationEntryViewModel : ObservableObject
+public partial class ObservationEntryViewModel : ObservableObject, IUnsavedChangesGuard
 {
-    private readonly IChildRepository _childRepo;
+    private readonly IChildRepository              _childRepo;
     private readonly INaturalObservationRepository _obsRepo;
 
-    // 一覧画面から編集要求があったとき、LoadAsync 完了まで保持する
+    // ── dirty 検知 ────────────────────────────────────────────────
+    private bool _suppressDirty;
+
+    private static readonly HashSet<string> DirtyProps = new()
+    {
+        nameof(SelectedChild), nameof(Date), nameof(ObservationType),
+        nameof(Situation), nameof(ObservedBehavior), nameof(Result),
+        nameof(Interpretation), nameof(NextVerification),
+    };
+
+    [ObservableProperty] private bool _hasUnsavedChanges;
+
+    protected override void OnPropertyChanged(PropertyChangedEventArgs e)
+    {
+        base.OnPropertyChanged(e);
+        if (!_suppressDirty && DirtyProps.Contains(e.PropertyName ?? ""))
+            HasUnsavedChanges = true;
+    }
+
+    public void DiscardChanges() => HasUnsavedChanges = false;
+
+    // ── 一覧画面から編集要求があったとき、LoadAsync 完了まで保持する ──
     private NaturalObservation? _pendingEditObs;
 
-    public ObservableCollection<Child> Children { get; } = [];
+    // ── コレクション・enum ──────────────────────────────────────────
+    public ObservableCollection<Child>              Children           { get; } = [];
     public ObservableCollection<NaturalObservation> RecentObservations { get; } = [];
 
     public List<EnumItem<ObservationType>> ObservationTypes { get; } = EnumHelper.GetItems<ObservationType>();
-    public List<EnumItem<ResponseResult>> ResponseResults  { get; } = EnumHelper.GetItems<ResponseResult>();
+    public List<EnumItem<ResponseResult>>  ResponseResults  { get; } = EnumHelper.GetItems<ResponseResult>();
 
+    // ── フォームフィールド ──────────────────────────────────────────
     [ObservableProperty] private Child?          _selectedChild;
     [ObservableProperty] private DateTime        _date = DateTime.Today;
     [ObservableProperty] private ObservationType _observationType = ObservationType.Natural;
@@ -48,15 +72,23 @@ public partial class ObservationEntryViewModel : ObservableObject
     [RelayCommand]
     private async Task LoadAsync()
     {
-        Children.Clear();
-        var children = await _childRepo.GetAllAsync();
-        foreach (var c in children) Children.Add(c);
-
-        // 一覧から編集要求があれば、コレクション準備後に適用
-        if (_pendingEditObs != null)
+        _suppressDirty = true;
+        try
         {
-            EditObservation(_pendingEditObs);
-            _pendingEditObs = null;
+            Children.Clear();
+            var children = await _childRepo.GetAllAsync();
+            foreach (var c in children) Children.Add(c);
+
+            // 一覧から編集要求があれば、コレクション準備後に適用
+            if (_pendingEditObs != null)
+            {
+                EditObservation(_pendingEditObs);
+                _pendingEditObs = null;
+            }
+        }
+        finally
+        {
+            _suppressDirty = false;
         }
     }
 
@@ -125,16 +157,26 @@ public partial class ObservationEntryViewModel : ObservableObject
     [RelayCommand]
     private void EditObservation(NaturalObservation obs)
     {
-        IsEditMode       = true;
-        EditingObsId     = obs.Id;
-        SelectedChild    = Children.FirstOrDefault(c => c.Id == obs.ChildId);
-        Date             = obs.Date;
-        ObservationType  = obs.ObservationType;
-        Situation        = obs.Situation;
-        ObservedBehavior = obs.ObservedBehavior;
-        Result           = obs.Result;
-        Interpretation   = obs.Interpretation;
-        NextVerification = obs.NextVerification;
+        _suppressDirty = true;
+        try
+        {
+            IsEditMode       = true;
+            EditingObsId     = obs.Id;
+            SelectedChild    = Children.FirstOrDefault(c => c.Id == obs.ChildId);
+            Date             = obs.Date;
+            ObservationType  = obs.ObservationType;
+            Situation        = obs.Situation;
+            ObservedBehavior = obs.ObservedBehavior;
+            Result           = obs.Result;
+            Interpretation   = obs.Interpretation;
+            NextVerification = obs.NextVerification;
+        }
+        finally
+        {
+            _suppressDirty = false;
+        }
+        // 編集セット後は「未保存」扱い
+        HasUnsavedChanges = true;
     }
 
     [RelayCommand]
@@ -148,11 +190,20 @@ public partial class ObservationEntryViewModel : ObservableObject
     [RelayCommand]
     private void ClearForm()
     {
-        Situation        = null;
-        ObservedBehavior = null;
-        Result           = null;
-        Interpretation   = null;
-        NextVerification = null;
-        IsEditMode       = false;
+        _suppressDirty = true;
+        try
+        {
+            Situation        = null;
+            ObservedBehavior = null;
+            Result           = null;
+            Interpretation   = null;
+            NextVerification = null;
+            IsEditMode       = false;
+        }
+        finally
+        {
+            _suppressDirty    = false;
+            HasUnsavedChanges = false;
+        }
     }
 }

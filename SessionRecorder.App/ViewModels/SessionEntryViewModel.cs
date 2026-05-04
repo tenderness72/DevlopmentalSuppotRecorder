@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using SessionRecorder.App.Converters;
@@ -8,32 +9,59 @@ using SessionRecorder.Data.Repositories;
 
 namespace SessionRecorder.App.ViewModels;
 
-public partial class SessionEntryViewModel : ObservableObject
+public partial class SessionEntryViewModel : ObservableObject, IUnsavedChangesGuard
 {
-    private readonly IChildRepository _childRepo;
-    private readonly IProgramRepository _programRepo;
-    private readonly ISessionRecordRepository _sessionRepo;
+    private readonly IChildRepository          _childRepo;
+    private readonly IProgramRepository        _programRepo;
+    private readonly ISessionRecordRepository  _sessionRepo;
 
-    public ObservableCollection<Child> Children { get; } = [];
-    public ObservableCollection<InterventionProgram> Programs { get; } = [];
-    public ObservableCollection<SessionRecord> RecentRecords { get; } = [];
+    // ── dirty 検知 ────────────────────────────────────────────────
+    // プログラムによるフィールド変更（ロード・編集セット・クリア）中は抑制する
+    private bool _suppressDirty;
+
+    // ユーザー操作で変化したとみなすプロパティ名
+    private static readonly HashSet<string> DirtyProps = new()
+    {
+        nameof(SelectedChild), nameof(SelectedProgram), nameof(Date),
+        nameof(TrialCount), nameof(CorrectCount),
+        nameof(MasteryLevel), nameof(PromptLevel),
+        nameof(ClinicalNote), nameof(Hypothesis), nameof(NextAction),
+    };
+
+    [ObservableProperty] private bool _hasUnsavedChanges;
+
+    protected override void OnPropertyChanged(PropertyChangedEventArgs e)
+    {
+        base.OnPropertyChanged(e);
+        if (!_suppressDirty && DirtyProps.Contains(e.PropertyName ?? ""))
+            HasUnsavedChanges = true;
+    }
+
+    /// <summary>「移動する」確定後にダーティフラグをリセット</summary>
+    public void DiscardChanges() => HasUnsavedChanges = false;
+
+    // ── コレクション・enum ──────────────────────────────────────────
+    public ObservableCollection<Child>              Children      { get; } = [];
+    public ObservableCollection<InterventionProgram> Programs     { get; } = [];
+    public ObservableCollection<SessionRecord>      RecentRecords { get; } = [];
 
     public List<EnumItem<MasteryLevel>> MasteryLevels { get; } = EnumHelper.GetItems<MasteryLevel>();
-    public List<EnumItem<PromptLevel>> PromptLevels { get; } = EnumHelper.GetItems<PromptLevel>();
+    public List<EnumItem<PromptLevel>>  PromptLevels  { get; } = EnumHelper.GetItems<PromptLevel>();
 
-    [ObservableProperty] private Child? _selectedChild;
+    // ── フォームフィールド ──────────────────────────────────────────
+    [ObservableProperty] private Child?               _selectedChild;
     [ObservableProperty] private InterventionProgram? _selectedProgram;
-    [ObservableProperty] private DateTime _date = DateTime.Today;
-    [ObservableProperty] private int? _trialCount;
-    [ObservableProperty] private int? _correctCount;
-    [ObservableProperty] private MasteryLevel? _masteryLevel;
-    [ObservableProperty] private PromptLevel? _promptLevel;
-    [ObservableProperty] private string? _clinicalNote;
-    [ObservableProperty] private string? _hypothesis;
-    [ObservableProperty] private string? _nextAction;
-    [ObservableProperty] private string _saveMessage = "";
-    [ObservableProperty] private bool _isEditMode;
-    [ObservableProperty] private int _editingRecordId;
+    [ObservableProperty] private DateTime             _date = DateTime.Today;
+    [ObservableProperty] private int?                 _trialCount;
+    [ObservableProperty] private int?                 _correctCount;
+    [ObservableProperty] private MasteryLevel?        _masteryLevel;
+    [ObservableProperty] private PromptLevel?         _promptLevel;
+    [ObservableProperty] private string?              _clinicalNote;
+    [ObservableProperty] private string?              _hypothesis;
+    [ObservableProperty] private string?              _nextAction;
+    [ObservableProperty] private string               _saveMessage = "";
+    [ObservableProperty] private bool                 _isEditMode;
+    [ObservableProperty] private int                  _editingRecordId;
 
     // セッション一覧から遷移時、Load後に適用する編集レコード
     private SessionRecord? _pendingEditRecord;
@@ -48,13 +76,13 @@ public partial class SessionEntryViewModel : ObservableObject
         IProgramRepository programRepo,
         ISessionRecordRepository sessionRepo)
     {
-        _childRepo = childRepo;
+        _childRepo   = childRepo;
         _programRepo = programRepo;
         _sessionRepo = sessionRepo;
     }
 
-    partial void OnTrialCountChanged(int? value) => OnPropertyChanged(nameof(CorrectRateDisplay));
-    partial void OnCorrectCountChanged(int? value) => OnPropertyChanged(nameof(CorrectRateDisplay));
+    partial void OnTrialCountChanged(int? value)   => OnPropertyChanged(nameof(CorrectRateDisplay));
+    partial void OnCorrectCountChanged(int? value)  => OnPropertyChanged(nameof(CorrectRateDisplay));
 
     /// <summary>セッション一覧からの遷移時に呼ぶ。Load完了後にフォームを自動セットする。</summary>
     public void PrepareEdit(SessionRecord record) => _pendingEditRecord = record;
@@ -62,20 +90,28 @@ public partial class SessionEntryViewModel : ObservableObject
     [RelayCommand]
     private async Task LoadAsync()
     {
-        Children.Clear();
-        Programs.Clear();
-
-        var children = await _childRepo.GetAllAsync();
-        foreach (var c in children) Children.Add(c);
-
-        var programs = await _programRepo.GetAllAsync();
-        foreach (var p in programs) Programs.Add(p);
-
-        // 一覧画面からの編集遷移：コレクション確定後に適用
-        if (_pendingEditRecord != null)
+        _suppressDirty = true;
+        try
         {
-            EditRecordCommand.Execute(_pendingEditRecord);
-            _pendingEditRecord = null;
+            Children.Clear();
+            Programs.Clear();
+
+            var children = await _childRepo.GetAllAsync();
+            foreach (var c in children) Children.Add(c);
+
+            var programs = await _programRepo.GetAllAsync();
+            foreach (var p in programs) Programs.Add(p);
+
+            // 一覧画面からの編集遷移：コレクション確定後に適用
+            if (_pendingEditRecord != null)
+            {
+                EditRecordCommand.Execute(_pendingEditRecord);
+                _pendingEditRecord = null;
+            }
+        }
+        finally
+        {
+            _suppressDirty = false;
         }
     }
 
@@ -101,16 +137,16 @@ public partial class SessionEntryViewModel : ObservableObject
             var record = await _sessionRepo.GetByIdAsync(EditingRecordId);
             if (record != null)
             {
-                record.Date = Date;
-                record.ChildId = SelectedChild.Id;
-                record.ProgramId = SelectedProgram.Id;
-                record.TrialCount = TrialCount;
+                record.Date         = Date;
+                record.ChildId      = SelectedChild.Id;
+                record.ProgramId    = SelectedProgram.Id;
+                record.TrialCount   = TrialCount;
                 record.CorrectCount = CorrectCount;
                 record.MasteryLevel = MasteryLevel;
-                record.PromptLevel = PromptLevel;
+                record.PromptLevel  = PromptLevel;
                 record.ClinicalNote = ClinicalNote;
-                record.Hypothesis = Hypothesis;
-                record.NextAction = NextAction;
+                record.Hypothesis   = Hypothesis;
+                record.NextAction   = NextAction;
                 await _sessionRepo.UpdateAsync(record);
                 SaveMessage = $"記録を更新しました（ID: {record.Id}）";
             }
@@ -120,16 +156,16 @@ public partial class SessionEntryViewModel : ObservableObject
         {
             var record = new SessionRecord
             {
-                Date = Date,
-                ChildId = SelectedChild.Id,
-                ProgramId = SelectedProgram.Id,
-                TrialCount = TrialCount,
+                Date         = Date,
+                ChildId      = SelectedChild.Id,
+                ProgramId    = SelectedProgram.Id,
+                TrialCount   = TrialCount,
                 CorrectCount = CorrectCount,
                 MasteryLevel = MasteryLevel,
-                PromptLevel = PromptLevel,
+                PromptLevel  = PromptLevel,
                 ClinicalNote = ClinicalNote,
-                Hypothesis = Hypothesis,
-                NextAction = NextAction
+                Hypothesis   = Hypothesis,
+                NextAction   = NextAction
             };
             await _sessionRepo.AddAsync(record);
             SaveMessage = $"保存しました（{SelectedChild.ChildCode} / {SelectedProgram.ProgramName}）";
@@ -149,18 +185,28 @@ public partial class SessionEntryViewModel : ObservableObject
     [RelayCommand]
     private void EditRecord(SessionRecord record)
     {
-        IsEditMode = true;
-        EditingRecordId = record.Id;
-        SelectedChild = Children.FirstOrDefault(c => c.Id == record.ChildId);
-        SelectedProgram = Programs.FirstOrDefault(p => p.Id == record.ProgramId);
-        Date = record.Date;
-        TrialCount = record.TrialCount;
-        CorrectCount = record.CorrectCount;
-        MasteryLevel = record.MasteryLevel;
-        PromptLevel = record.PromptLevel;
-        ClinicalNote = record.ClinicalNote;
-        Hypothesis = record.Hypothesis;
-        NextAction = record.NextAction;
+        _suppressDirty = true;
+        try
+        {
+            IsEditMode      = true;
+            EditingRecordId = record.Id;
+            SelectedChild   = Children.FirstOrDefault(c => c.Id == record.ChildId);
+            SelectedProgram = Programs.FirstOrDefault(p => p.Id == record.ProgramId);
+            Date            = record.Date;
+            TrialCount      = record.TrialCount;
+            CorrectCount    = record.CorrectCount;
+            MasteryLevel    = record.MasteryLevel;
+            PromptLevel     = record.PromptLevel;
+            ClinicalNote    = record.ClinicalNote;
+            Hypothesis      = record.Hypothesis;
+            NextAction      = record.NextAction;
+        }
+        finally
+        {
+            _suppressDirty  = false;
+        }
+        // 編集セット後は「未保存」扱いにする（既存データを変更するかもしれないため）
+        HasUnsavedChanges = true;
     }
 
     [RelayCommand]
@@ -174,13 +220,22 @@ public partial class SessionEntryViewModel : ObservableObject
     [RelayCommand]
     private void ClearForm()
     {
-        TrialCount = null;
-        CorrectCount = null;
-        MasteryLevel = null;
-        PromptLevel = null;
-        ClinicalNote = null;
-        Hypothesis = null;
-        NextAction = null;
-        IsEditMode = false;
+        _suppressDirty = true;
+        try
+        {
+            TrialCount   = null;
+            CorrectCount = null;
+            MasteryLevel = null;
+            PromptLevel  = null;
+            ClinicalNote = null;
+            Hypothesis   = null;
+            NextAction   = null;
+            IsEditMode   = false;
+        }
+        finally
+        {
+            _suppressDirty    = false;
+            HasUnsavedChanges = false;
+        }
     }
 }
