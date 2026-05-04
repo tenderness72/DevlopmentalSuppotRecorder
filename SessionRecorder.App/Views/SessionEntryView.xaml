@@ -51,7 +51,7 @@
                         </ComboBox.ItemTemplate>
                     </ComboBox>
 
-                    <Grid Margin="0,0,0,10">
+                    <Grid Margin="0,0,0,4">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="*"/>
@@ -72,6 +72,11 @@
                             </Border>
                         </StackPanel>
                     </Grid>
+                    <!-- 正答数 > 試行数 エラー -->
+                    <TextBlock Text="{Binding CountError}"
+                               Foreground="#DC2626" FontSize="11" FontWeight="SemiBold"
+                               Margin="0,2,0,8"
+                               Visibility="{Binding CountError, Converter={StaticResource StringToVis}}"/>
 
                     <Grid Margin="0,0,0,10">
                         <Grid.ColumnDefinitions>

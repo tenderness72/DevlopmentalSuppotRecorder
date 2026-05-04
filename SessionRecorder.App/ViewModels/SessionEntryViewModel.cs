@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using SessionRecorder.App.Converters;
@@ -16,10 +17,8 @@ public partial class SessionEntryViewModel : ObservableObject, IUnsavedChangesGu
     private readonly ISessionRecordRepository  _sessionRepo;
 
     // ── dirty 検知 ────────────────────────────────────────────────
-    // プログラムによるフィールド変更（ロード・編集セット・クリア）中は抑制する
     private bool _suppressDirty;
 
-    // ユーザー操作で変化したとみなすプロパティ名
     private static readonly HashSet<string> DirtyProps = new()
     {
         nameof(SelectedChild), nameof(SelectedProgram), nameof(Date),
@@ -37,13 +36,12 @@ public partial class SessionEntryViewModel : ObservableObject, IUnsavedChangesGu
             HasUnsavedChanges = true;
     }
 
-    /// <summary>「移動する」確定後にダーティフラグをリセット</summary>
     public void DiscardChanges() => HasUnsavedChanges = false;
 
     // ── コレクション・enum ──────────────────────────────────────────
-    public ObservableCollection<Child>              Children      { get; } = [];
-    public ObservableCollection<InterventionProgram> Programs     { get; } = [];
-    public ObservableCollection<SessionRecord>      RecentRecords { get; } = [];
+    public ObservableCollection<Child>               Children      { get; } = [];
+    public ObservableCollection<InterventionProgram> Programs      { get; } = [];
+    public ObservableCollection<SessionRecord>       RecentRecords { get; } = [];
 
     public List<EnumItem<MasteryLevel>> MasteryLevels { get; } = EnumHelper.GetItems<MasteryLevel>();
     public List<EnumItem<PromptLevel>>  PromptLevels  { get; } = EnumHelper.GetItems<PromptLevel>();
@@ -63,13 +61,37 @@ public partial class SessionEntryViewModel : ObservableObject, IUnsavedChangesGu
     [ObservableProperty] private bool                 _isEditMode;
     [ObservableProperty] private int                  _editingRecordId;
 
-    // セッション一覧から遷移時、Load後に適用する編集レコード
-    private SessionRecord? _pendingEditRecord;
+    // ── 試行数・正答数の整合性チェック ──────────────────────────────
+    /// <summary>正反応数が試行数を超えている場合にエラーメッセージを返す</summary>
+    public string CountError =>
+        TrialCount.HasValue && CorrectCount.HasValue && CorrectCount.Value > TrialCount.Value
+            ? "⚠ 正反応数が試行数を超えています"
+            : "";
+
+    public bool IsCountValid =>
+        !(TrialCount.HasValue && CorrectCount.HasValue && CorrectCount.Value > TrialCount.Value);
 
     public string CorrectRateDisplay =>
-        (TrialCount.HasValue && TrialCount > 0 && CorrectCount.HasValue)
+        (TrialCount.HasValue && TrialCount > 0 && CorrectCount.HasValue && IsCountValid)
             ? $"{(double)CorrectCount.Value / TrialCount.Value:P0}"
             : "—";
+
+    partial void OnTrialCountChanged(int? value)
+    {
+        OnPropertyChanged(nameof(CorrectRateDisplay));
+        OnPropertyChanged(nameof(CountError));
+        OnPropertyChanged(nameof(IsCountValid));
+    }
+
+    partial void OnCorrectCountChanged(int? value)
+    {
+        OnPropertyChanged(nameof(CorrectRateDisplay));
+        OnPropertyChanged(nameof(CountError));
+        OnPropertyChanged(nameof(IsCountValid));
+    }
+
+    // セッション一覧から遷移時、Load後に適用する編集レコード
+    private SessionRecord? _pendingEditRecord;
 
     public SessionEntryViewModel(
         IChildRepository childRepo,
@@ -81,10 +103,6 @@ public partial class SessionEntryViewModel : ObservableObject, IUnsavedChangesGu
         _sessionRepo = sessionRepo;
     }
 
-    partial void OnTrialCountChanged(int? value)   => OnPropertyChanged(nameof(CorrectRateDisplay));
-    partial void OnCorrectCountChanged(int? value)  => OnPropertyChanged(nameof(CorrectRateDisplay));
-
-    /// <summary>セッション一覧からの遷移時に呼ぶ。Load完了後にフォームを自動セットする。</summary>
     public void PrepareEdit(SessionRecord record) => _pendingEditRecord = record;
 
     [RelayCommand]
@@ -102,17 +120,13 @@ public partial class SessionEntryViewModel : ObservableObject, IUnsavedChangesGu
             var programs = await _programRepo.GetAllAsync();
             foreach (var p in programs) Programs.Add(p);
 
-            // 一覧画面からの編集遷移：コレクション確定後に適用
             if (_pendingEditRecord != null)
             {
                 EditRecordCommand.Execute(_pendingEditRecord);
                 _pendingEditRecord = null;
             }
         }
-        finally
-        {
-            _suppressDirty = false;
-        }
+        finally { _suppressDirty = false; }
     }
 
     async partial void OnSelectedChildChanged(Child? value)
@@ -129,6 +143,13 @@ public partial class SessionEntryViewModel : ObservableObject, IUnsavedChangesGu
         if (SelectedChild == null || SelectedProgram == null)
         {
             SaveMessage = "児童とプログラムを選択してください";
+            return;
+        }
+
+        // ▼ 正答数 > 試行数 は保存ブロック
+        if (!IsCountValid)
+        {
+            SaveMessage = "正反応数が試行数を超えています。入力値を確認してください";
             return;
         }
 
@@ -171,7 +192,6 @@ public partial class SessionEntryViewModel : ObservableObject, IUnsavedChangesGu
             SaveMessage = $"保存しました（{SelectedChild.ChildCode} / {SelectedProgram.ProgramName}）";
         }
 
-        // Refresh recent records
         if (SelectedChild != null)
         {
             RecentRecords.Clear();
@@ -185,6 +205,18 @@ public partial class SessionEntryViewModel : ObservableObject, IUnsavedChangesGu
     [RelayCommand]
     private void EditRecord(SessionRecord record)
     {
+        // ▼ 入力中フォームを上書きする前に確認（直近一覧の編集ボタン対策）
+        if (HasUnsavedChanges)
+        {
+            var result = MessageBox.Show(
+                "入力中のデータが保存されていません。\n別のセッションを読み込むと現在の内容が失われます。\n\n続けますか？",
+                "未保存の変更があります",
+                MessageBoxButton.OKCancel,
+                MessageBoxImage.Warning,
+                MessageBoxResult.Cancel);
+            if (result != MessageBoxResult.OK) return;
+        }
+
         _suppressDirty = true;
         try
         {
@@ -201,17 +233,23 @@ public partial class SessionEntryViewModel : ObservableObject, IUnsavedChangesGu
             Hypothesis      = record.Hypothesis;
             NextAction      = record.NextAction;
         }
-        finally
-        {
-            _suppressDirty  = false;
-        }
-        // 編集セット後は「未保存」扱いにする（既存データを変更するかもしれないため）
+        finally { _suppressDirty = false; }
+
         HasUnsavedChanges = true;
     }
 
     [RelayCommand]
     private async Task DeleteRecordAsync(SessionRecord record)
     {
+        // ▼ 削除確認（デフォルト：キャンセル）
+        var result = MessageBox.Show(
+            $"{record.Date:yyyy/MM/dd}  {record.Program?.ProgramName}\nこのセッション記録を削除しますか？\nこの操作は元に戻せません。",
+            "削除の確認",
+            MessageBoxButton.OKCancel,
+            MessageBoxImage.Warning,
+            MessageBoxResult.Cancel);
+        if (result != MessageBoxResult.OK) return;
+
         await _sessionRepo.DeleteAsync(record.Id);
         RecentRecords.Remove(record);
         SaveMessage = "記録を削除しました";

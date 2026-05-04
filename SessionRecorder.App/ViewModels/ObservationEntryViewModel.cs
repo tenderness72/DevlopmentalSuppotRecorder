@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using SessionRecorder.App.Converters;
@@ -182,10 +183,22 @@ public partial class ObservationEntryViewModel : ObservableObject, IUnsavedChang
     [RelayCommand]
     private async Task DeleteObservationAsync(NaturalObservation obs)
     {
+        // ▼ 削除確認（デフォルト：キャンセル）
+        var result = MessageBox.Show(
+            $"{obs.Date:yyyy/MM/dd}  {obs.Child?.Name}\n「{Truncate(obs.ObservedBehavior, 30)}」\nこの自然場面記録を削除しますか？\nこの操作は元に戻せません。",
+            "削除の確認",
+            MessageBoxButton.OKCancel,
+            MessageBoxImage.Warning,
+            MessageBoxResult.Cancel);
+        if (result != MessageBoxResult.OK) return;
+
         await _obsRepo.DeleteAsync(obs.Id);
         RecentObservations.Remove(obs);
         SaveMessage = "記録を削除しました";
     }
+
+    private static string Truncate(string? s, int max) =>
+        s == null ? "" : (s.Length <= max ? s : s[..max] + "…");
 
     [RelayCommand]
     private void ClearForm()

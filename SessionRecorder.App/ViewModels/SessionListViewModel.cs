@@ -61,8 +61,9 @@ public partial class SessionListViewModel : ObservableObject
     private async Task DeleteSessionAsync(SessionRecord record)
     {
         var result = MessageBox.Show(
-            $"{record.Date:yyyy/MM/dd}  {record.Child?.Name} / {record.Program?.ProgramName}\nこのセッション記録を削除しますか？",
-            "削除の確認", MessageBoxButton.OKCancel, MessageBoxImage.Warning);
+            $"{record.Date:yyyy/MM/dd}  {record.Child?.Name} / {record.Program?.ProgramName}\nこのセッション記録を削除しますか？\nこの操作は元に戻せません。",
+            "削除の確認", MessageBoxButton.OKCancel, MessageBoxImage.Warning,
+            MessageBoxResult.Cancel);
 
         if (result != MessageBoxResult.OK) return;
 

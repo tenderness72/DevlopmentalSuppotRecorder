@@ -95,7 +95,8 @@ public partial class ObservationListViewModel : ObservableObject
     {
         var result = MessageBox.Show(
             $"{obs.Date:yyyy/MM/dd}  {obs.Child?.Name}\n「{Truncate(obs.ObservedBehavior, 30)}」\nこの自然場面記録を削除しますか？",
-            "削除の確認", MessageBoxButton.OKCancel, MessageBoxImage.Warning);
+            "削除の確認", MessageBoxButton.OKCancel, MessageBoxImage.Warning,
+            MessageBoxResult.Cancel);
 
         if (result != MessageBoxResult.OK) return;
 
