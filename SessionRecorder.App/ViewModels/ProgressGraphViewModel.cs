@@ -145,7 +145,7 @@ public partial class ProgressGraphViewModel : ObservableObject
                 GeometryFill      = new SolidColorPaint(SKColor.Parse("#2563EB")),
                 GeometryStroke    = new SolidColorPaint(SKColors.White, 2f),
                 GeometrySize      = 10,
-                LineSmoothness    = 0.2
+                LineSmoothness    = 0
             }
         };
 
