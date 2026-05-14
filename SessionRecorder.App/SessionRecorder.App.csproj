@@ -8,7 +8,7 @@
     <ApplicationIcon>dev_record_icon.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
-    <Content Include="dev_record_icon.ico" />
+    <Resource Include="dev_record_icon.ico" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.3.2" />
