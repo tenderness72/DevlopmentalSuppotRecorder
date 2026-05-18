@@ -17,7 +17,21 @@
       "Bash(iscc /?)",
       "Bash(powershell -Command \"Get-Command iscc -ErrorAction SilentlyContinue\")",
       "PowerShell([System.Guid]::NewGuid\\(\\).ToString\\(\\).ToUpper\\(\\))",
-      "PowerShell(Get-Item \"C:\\\\Users\\\\N\\\\Desktop\\\\SessionRecorder_v2\\\\SessionRecorder\\\\SessionRecorder.Installer\\\\bin\\\\x64\\\\Release\\\\SessionRecorder_Setup.msi\" | Select-Object FullName, @{N=\"SizeMB\";E={[math]::Round\\($_.Length/1MB,1\\)}}, LastWriteTime)"
+      "PowerShell(Get-Item \"C:\\\\Users\\\\N\\\\Desktop\\\\SessionRecorder_v2\\\\SessionRecorder\\\\SessionRecorder.Installer\\\\bin\\\\x64\\\\Release\\\\SessionRecorder_Setup.msi\" | Select-Object FullName, @{N=\"SizeMB\";E={[math]::Round\\($_.Length/1MB,1\\)}}, LastWriteTime)",
+      "Bash(git rm *)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)",
+      "Bash(dotnet clean *)",
+      "Bash(del \"C:\\\\Users\\\\N\\\\Desktop\\\\SessionRecorder_v2\\\\SessionRecorder\\\\SessionRecorder.Core\\\\Enums\\\\ProgramType.cs\")",
+      "Bash(powershell -Command \"Get-Item dev_record_icon.ico | Format-List Name, Length, FullName\")",
+      "Bash(powershell -ExecutionPolicy Bypass -File \"build-installer.ps1\")",
+      "Bash(powershell -ExecutionPolicy Bypass -File \"C:\\\\Users\\\\N\\\\Desktop\\\\SessionRecorder_v2\\\\SessionRecorder\\\\diag_full.ps1\")",
+      "Bash(ls -la \"C:\\\\Users\\\\N\\\\Downloads\\\\Cairn.ico\" 2>&1)",
+      "Bash(cp \"C:\\\\Users\\\\N\\\\Downloads\\\\Cairn.ico\" \"C:\\\\Users\\\\N\\\\Desktop\\\\SessionRecorder_v2\\\\SessionRecorder\\\\SessionRecorder.App\\\\dev_record_icon.ico.single256.bak\")",
+      "Bash(powershell -ExecutionPolicy Bypass -File \"C:\\\\Users\\\\N\\\\Desktop\\\\SessionRecorder_v2\\\\SessionRecorder\\\\check_new_ico.ps1\")",
+      "Bash(powershell -ExecutionPolicy Bypass -File \"C:\\\\Users\\\\N\\\\Desktop\\\\SessionRecorder_v2\\\\SessionRecorder\\\\build_multi_ico.ps1\")",
+      "Bash(git checkout *)"
     ]
   }
 }

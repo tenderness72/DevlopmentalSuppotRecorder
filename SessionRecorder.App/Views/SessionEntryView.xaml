@@ -128,6 +128,29 @@
                            Margin="0,0,0,12" Foreground="{StaticResource TextBrush}"/>
                 <DataGrid ItemsSource="{Binding RecentRecords}">
                     <DataGrid.Columns>
+                        <DataGridTemplateColumn Header="" Width="60" CanUserResize="False" CanUserSort="False">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <Button Content="編集" ToolTip="この記録を編集"
+                                            FontSize="11" FontWeight="SemiBold" Cursor="Hand"
+                                            Foreground="White" Background="#2563EB"
+                                            BorderThickness="0"
+                                            Padding="8,3"
+                                            HorizontalAlignment="Center" VerticalAlignment="Center"
+                                            Command="{Binding DataContext.EditRecordCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                            CommandParameter="{Binding}">
+                                        <Button.Template>
+                                            <ControlTemplate TargetType="Button">
+                                                <Border Background="{TemplateBinding Background}"
+                                                        CornerRadius="4" Padding="{TemplateBinding Padding}">
+                                                    <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                </Border>
+                                            </ControlTemplate>
+                                        </Button.Template>
+                                    </Button>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
                         <DataGridTextColumn Header="日付" Binding="{Binding Date, StringFormat=MM/dd}" Width="55"/>
                         <DataGridTextColumn Header="課題名" Binding="{Binding Program.ProgramName}" Width="140"/>
                         <DataGridTextColumn Header="試行" Binding="{Binding TrialCount}" Width="40"/>
@@ -135,15 +158,6 @@
                         <DataGridTextColumn Header="率" Binding="{Binding CorrectRate, Converter={StaticResource Percentage}}" Width="45"/>
                         <DataGridTextColumn Header="判定" Binding="{Binding MasteryLevel, Converter={StaticResource EnumToDisplay}}" Width="60"/>
                         <DataGridTextColumn Header="臨床メモ" Binding="{Binding ClinicalNote}" Width="180"/>
-                        <DataGridTemplateColumn Header="" Width="40">
-                            <DataGridTemplateColumn.CellTemplate>
-                                <DataTemplate>
-                                    <Button Content="✏" FontSize="11" Cursor="Hand" Background="Transparent" BorderThickness="0"
-                                            Command="{Binding DataContext.EditRecordCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                            CommandParameter="{Binding}"/>
-                                </DataTemplate>
-                            </DataGridTemplateColumn.CellTemplate>
-                        </DataGridTemplateColumn>
                     </DataGrid.Columns>
                 </DataGrid>
             </DockPanel>

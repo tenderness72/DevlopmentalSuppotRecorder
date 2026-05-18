@@ -7,6 +7,7 @@ public class AppDbContext : DbContext
 {
     public DbSet<Child> Children => Set<Child>();
     public DbSet<SkillDomain> SkillDomains => Set<SkillDomain>();
+    public DbSet<ProgramTypeMaster> ProgramTypes => Set<ProgramTypeMaster>();
     public DbSet<InterventionProgram> Programs => Set<InterventionProgram>();
     public DbSet<SessionRecord> SessionRecords => Set<SessionRecord>();
     public DbSet<NaturalObservation> NaturalObservations => Set<NaturalObservation>();
@@ -48,14 +49,23 @@ public class AppDbContext : DbContext
             e.HasIndex(d => d.DomainCode).IsUnique();
         });
 
+        // ProgramTypeMaster
+        mb.Entity<ProgramTypeMaster>(e =>
+        {
+            e.HasIndex(t => t.TypeCode).IsUnique();
+        });
+
         // InterventionProgram
         mb.Entity<InterventionProgram>(e =>
         {
             e.HasIndex(p => p.ProgramCode).IsUnique();
-            e.Property(p => p.ProgramType).HasConversion<string>();
             e.HasOne(p => p.Domain)
                 .WithMany(d => d.Programs)
                 .HasForeignKey(p => p.DomainId)
+                .OnDelete(DeleteBehavior.Restrict);
+            e.HasOne(p => p.ProgramType)
+                .WithMany(t => t.Programs)
+                .HasForeignKey(p => p.ProgramTypeId)
                 .OnDelete(DeleteBehavior.Restrict);
         });
 
@@ -105,14 +115,21 @@ public class AppDbContext : DbContext
             new SkillDomain { Id = 99, DomainCode = "D999", DomainName = "その他",                IsActive = true }
         );
 
+        // Seed: 初期プログラム型
+        mb.Entity<ProgramTypeMaster>().HasData(
+            new { Id = 1, TypeCode = "StructuredWorksheet", TypeName = "構造化WS",       IsActive = true },
+            new { Id = 2, TypeCode = "RolePlay",            TypeName = "ロールプレイ",   IsActive = true },
+            new { Id = 3, TypeCode = "DirectInstruction",   TypeName = "直接教示",       IsActive = true }
+        );
+
         // Seed: "その他" program
-        mb.Entity<InterventionProgram>().HasData(new InterventionProgram
+        mb.Entity<InterventionProgram>().HasData(new
         {
             Id = 1,
             ProgramCode = "P999",
             ProgramName = "その他（単発課題）",
             DomainId = 99,
-            ProgramType = Core.Enums.ProgramType.DirectInstruction,
+            ProgramTypeId = 3,  // 直接教示
             MasteryCriteria = "—",
             Notes = "1回限りの課題や分類不能な課題用。詳細はセッション記録の臨床メモに記述。",
             IsActive = true

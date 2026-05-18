@@ -4,17 +4,16 @@ using SessionRecorder.App.ViewModels;
 
 namespace SessionRecorder.App.Views;
 
-public partial class SkillDomainListView : UserControl
+public partial class ProgramTypeListView : UserControl
 {
-    public SkillDomainListView()
+    public ProgramTypeListView()
     {
         InitializeComponent();
-        IsVisibleChanged += OnIsVisibleChanged;
     }
 
     private async void OnIsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
     {
-        if ((bool)e.NewValue && DataContext is SkillDomainListViewModel vm)
+        if ((bool)e.NewValue && DataContext is ProgramTypeListViewModel vm)
             await vm.LoadCommand.ExecuteAsync(null);
     }
 }
