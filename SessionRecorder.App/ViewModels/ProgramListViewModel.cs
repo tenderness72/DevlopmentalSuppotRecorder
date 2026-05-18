@@ -1,9 +1,8 @@
 using System.Collections.ObjectModel;
+using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using SessionRecorder.App.Converters;
 using SessionRecorder.Core.Entities;
-using SessionRecorder.Core.Enums;
 using SessionRecorder.Data.Repositories;
 
 namespace SessionRecorder.App.ViewModels;
@@ -12,10 +11,11 @@ public partial class ProgramListViewModel : ObservableObject
 {
     private readonly IProgramRepository _programRepo;
     private readonly ISkillDomainRepository _domainRepo;
+    private readonly IProgramTypeRepository _typeRepo;
 
     public ObservableCollection<InterventionProgram> Programs { get; } = [];
     public ObservableCollection<SkillDomain> Domains { get; } = [];
-    public List<EnumItem<ProgramType>> ProgramTypes { get; } = EnumHelper.GetItems<ProgramType>();
+    public ObservableCollection<ProgramTypeMaster> ProgramTypes { get; } = [];
 
     [ObservableProperty] private InterventionProgram? _selectedProgram;
     [ObservableProperty] private bool _isEditing;
@@ -25,14 +25,18 @@ public partial class ProgramListViewModel : ObservableObject
     [ObservableProperty] private string _editProgramCode = "";
     [ObservableProperty] private string _editProgramName = "";
     [ObservableProperty] private SkillDomain? _editDomain;
-    [ObservableProperty] private ProgramType _editProgramType;
+    [ObservableProperty] private ProgramTypeMaster? _editProgramType;
     [ObservableProperty] private string? _editMasteryCriteria;
     [ObservableProperty] private string? _editNotes;
 
-    public ProgramListViewModel(IProgramRepository programRepo, ISkillDomainRepository domainRepo)
+    public ProgramListViewModel(
+        IProgramRepository programRepo,
+        ISkillDomainRepository domainRepo,
+        IProgramTypeRepository typeRepo)
     {
         _programRepo = programRepo;
         _domainRepo = domainRepo;
+        _typeRepo = typeRepo;
     }
 
     [RelayCommand]
@@ -40,12 +44,16 @@ public partial class ProgramListViewModel : ObservableObject
     {
         Programs.Clear();
         Domains.Clear();
+        ProgramTypes.Clear();
 
         var programs = await _programRepo.GetAllAsync();
         foreach (var p in programs) Programs.Add(p);
 
         var domains = await _domainRepo.GetAllAsync();
         foreach (var d in domains) Domains.Add(d);
+
+        var types = await _typeRepo.GetAllAsync();
+        foreach (var t in types) ProgramTypes.Add(t);
     }
 
     [RelayCommand]
@@ -56,29 +64,53 @@ public partial class ProgramListViewModel : ObservableObject
         EditProgramCode = await _programRepo.GetNextCodeAsync();
         EditProgramName = "";
         EditDomain = Domains.FirstOrDefault();
-        EditProgramType = ProgramType.StructuredWorksheet;
+        EditProgramType = ProgramTypes.FirstOrDefault();
         EditMasteryCriteria = null;
         EditNotes = null;
     }
 
     [RelayCommand]
-    private void EditProgram()
+    private void EditProgram(InterventionProgram program)
     {
-        if (SelectedProgram == null) return;
+        SelectedProgram = program;
         IsNewProgram = false;
         IsEditing = true;
-        EditProgramCode = SelectedProgram.ProgramCode;
-        EditProgramName = SelectedProgram.ProgramName;
-        EditDomain = Domains.FirstOrDefault(d => d.Id == SelectedProgram.DomainId);
-        EditProgramType = SelectedProgram.ProgramType;
-        EditMasteryCriteria = SelectedProgram.MasteryCriteria;
-        EditNotes = SelectedProgram.Notes;
+        EditProgramCode = program.ProgramCode;
+        EditProgramName = program.ProgramName;
+        EditDomain = Domains.FirstOrDefault(d => d.Id == program.DomainId);
+        EditProgramType = ProgramTypes.FirstOrDefault(t => t.Id == program.ProgramTypeId);
+        EditMasteryCriteria = program.MasteryCriteria;
+        EditNotes = program.Notes;
+    }
+
+    [RelayCommand]
+    private async Task DeleteProgramAsync(InterventionProgram program)
+    {
+        var inUse = await _programRepo.IsInUseAsync(program.Id);
+        if (inUse)
+        {
+            MessageBox.Show(
+                $"「{program.ProgramName}」はセッション記録で使用されているため削除できません。",
+                "削除できません", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
+        var result = MessageBox.Show(
+            $"「{program.ProgramName}」を削除しますか？\nこの操作は元に戻せません。",
+            "削除の確認", MessageBoxButton.OKCancel, MessageBoxImage.Warning,
+            MessageBoxResult.Cancel);
+
+        if (result != MessageBoxResult.OK) return;
+
+        await _programRepo.DeleteAsync(program.Id);
+        Programs.Remove(program);
+        if (SelectedProgram == program) { SelectedProgram = null; IsEditing = false; }
     }
 
     [RelayCommand]
     private async Task SaveProgramAsync()
     {
-        if (EditDomain == null) return;
+        if (EditDomain == null || EditProgramType == null) return;
 
         if (IsNewProgram)
         {
@@ -87,7 +119,7 @@ public partial class ProgramListViewModel : ObservableObject
                 ProgramCode = EditProgramCode,
                 ProgramName = EditProgramName,
                 DomainId = EditDomain.Id,
-                ProgramType = EditProgramType,
+                ProgramTypeId = EditProgramType.Id,
                 MasteryCriteria = EditMasteryCriteria,
                 Notes = EditNotes
             };
@@ -98,7 +130,7 @@ public partial class ProgramListViewModel : ObservableObject
             SelectedProgram.ProgramCode = EditProgramCode;
             SelectedProgram.ProgramName = EditProgramName;
             SelectedProgram.DomainId = EditDomain.Id;
-            SelectedProgram.ProgramType = EditProgramType;
+            SelectedProgram.ProgramTypeId = EditProgramType.Id;
             SelectedProgram.MasteryCriteria = EditMasteryCriteria;
             SelectedProgram.Notes = EditNotes;
             await _programRepo.UpdateAsync(SelectedProgram);

@@ -2,16 +2,20 @@
 <Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
      xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui">
 
-  <Package Name="支援記録データベース"
+  <Package Name="Cairn"
            Language="1041"
            Codepage="932"
            Version="1.0.0.0"
-           Manufacturer="SessionRecorder"
+           Manufacturer="Nakayama"
            UpgradeCode="F452D054-6EC2-45A3-9D10-4A2EE35E8E31"
            Scope="perMachine">
 
     <MajorUpgrade DowngradeErrorMessage="より新しいバージョンが既にインストールされています。アンインストール後に再試行してください。" />
     <MediaTemplate EmbedCab="yes" />
+
+    <!-- アイコンの明示的な同梱（マルチ解像度を保持してショートカット・ARPに使用） -->
+    <Icon Id="CairnIcon.ico" SourceFile="..\SessionRecorder.App\dev_record_icon.ico" />
+    <Property Id="ARPPRODUCTICON" Value="CairnIcon.ico" />
 
     <!-- インストール先フォルダ選択UI -->
     <ui:WixUI Id="WixUI_InstallDir" />
@@ -19,11 +23,11 @@
 
     <!-- ディレクトリ定義 -->
     <StandardDirectory Id="ProgramFiles6432Folder">
-      <Directory Id="INSTALLFOLDER" Name="SessionRecorder" />
+      <Directory Id="INSTALLFOLDER" Name="Cairn" />
     </StandardDirectory>
 
     <StandardDirectory Id="ProgramMenuFolder">
-      <Directory Id="ApplicationProgramsFolder" Name="支援記録データベース" />
+      <Directory Id="ApplicationProgramsFolder" Name="Cairn" />
     </StandardDirectory>
 
     <StandardDirectory Id="DesktopFolder" />
@@ -31,9 +35,11 @@
     <!-- スタートメニューショートカット -->
     <Component Id="StartMenuShortcut" Directory="ApplicationProgramsFolder" Guid="*">
       <Shortcut Id="AppStartMenuShortcut"
-                Name="支援記録データベース"
+                Name="Cairn"
                 Target="[INSTALLFOLDER]SessionRecorder.App.exe"
-                WorkingDirectory="INSTALLFOLDER" />
+                WorkingDirectory="INSTALLFOLDER"
+                Icon="CairnIcon.ico"
+                IconIndex="0" />
       <RemoveFolder Id="RemoveStartMenuFolder"
                     Directory="ApplicationProgramsFolder"
                     On="uninstall" />
@@ -47,9 +53,11 @@
     <!-- デスクトップショートカット -->
     <Component Id="DesktopShortcut" Directory="DesktopFolder" Guid="*">
       <Shortcut Id="AppDesktopShortcut"
-                Name="支援記録データベース"
+                Name="Cairn"
                 Target="[INSTALLFOLDER]SessionRecorder.App.exe"
-                WorkingDirectory="INSTALLFOLDER" />
+                WorkingDirectory="INSTALLFOLDER"
+                Icon="CairnIcon.ico"
+                IconIndex="0" />
       <RegistryValue Root="HKCU"
                      Key="Software\SessionRecorder"
                      Name="DesktopInstalled"
@@ -58,7 +66,7 @@
     </Component>
 
     <!-- インストールする機能 -->
-    <Feature Id="MainFeature" Title="支援記録データベース" Level="1">
+    <Feature Id="MainFeature" Title="Cairn" Level="1">
       <ComponentGroupRef Id="AppFiles" />
       <ComponentRef Id="StartMenuShortcut" />
       <ComponentRef Id="DesktopShortcut" />

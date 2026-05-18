@@ -46,14 +46,14 @@ public partial class SkillDomainListViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private void EditDomain()
+    private void EditDomain(SkillDomain domain)
     {
-        if (SelectedDomain == null) return;
+        SelectedDomain = domain;
         IsNewDomain = false;
         IsEditing = true;
-        EditDomainCode = SelectedDomain.DomainCode;
-        EditDomainName = SelectedDomain.DomainName;
-        EditNotes = SelectedDomain.Notes;
+        EditDomainCode = domain.DomainCode;
+        EditDomainName = domain.DomainName;
+        EditNotes = domain.Notes;
         StatusMessage = "";
     }
 
@@ -92,27 +92,29 @@ public partial class SkillDomainListViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private async Task DeleteDomainAsync()
+    private async Task DeleteDomainAsync(SkillDomain domain)
     {
-        if (SelectedDomain == null) return;
+        SelectedDomain = domain;
 
         // 使用中チェック
-        var inUse = await _domainRepo.IsInUseAsync(SelectedDomain.Id);
+        var inUse = await _domainRepo.IsInUseAsync(domain.Id);
         if (inUse)
         {
-            StatusMessage = $"「{SelectedDomain.DomainName}」は既にプログラムで使用されているため削除できません";
+            StatusMessage = $"「{domain.DomainName}」は既にプログラムで使用されているため削除できません";
             return;
         }
 
         var result = MessageBox.Show(
-            $"「{SelectedDomain.DomainName}」を削除しますか？",
-            "確認", MessageBoxButton.YesNo, MessageBoxImage.Question);
+            $"「{domain.DomainName}」を削除しますか？",
+            "削除の確認", MessageBoxButton.OKCancel, MessageBoxImage.Warning,
+            MessageBoxResult.Cancel);
 
-        if (result != MessageBoxResult.Yes) return;
+        if (result != MessageBoxResult.OK) return;
 
-        SelectedDomain.IsActive = false;
-        await _domainRepo.UpdateAsync(SelectedDomain);
-        StatusMessage = $"「{SelectedDomain.DomainName}」を削除しました";
+        domain.IsActive = false;
+        await _domainRepo.UpdateAsync(domain);
+        StatusMessage = $"「{domain.DomainName}」を削除しました";
+        IsEditing = false;
         await LoadAsync();
     }
 

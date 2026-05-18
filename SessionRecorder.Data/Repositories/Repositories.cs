@@ -32,6 +32,18 @@ public interface IProgramRepository
     Task<InterventionProgram?> GetByIdAsync(int id);
     Task AddAsync(InterventionProgram program);
     Task UpdateAsync(InterventionProgram program);
+    Task DeleteAsync(int id);
+    Task<bool> IsInUseAsync(int id);
+    Task<string> GetNextCodeAsync();
+}
+
+public interface IProgramTypeRepository
+{
+    Task<List<ProgramTypeMaster>> GetAllAsync(bool activeOnly = true);
+    Task<ProgramTypeMaster?> GetByIdAsync(int id);
+    Task AddAsync(ProgramTypeMaster type);
+    Task UpdateAsync(ProgramTypeMaster type);
+    Task<bool> IsInUseAsync(int id);
     Task<string> GetNextCodeAsync();
 }
 
@@ -158,13 +170,19 @@ public class ProgramRepository(AppDbContext db) : IProgramRepository
 {
     public async Task<List<InterventionProgram>> GetAllAsync(bool activeOnly = true)
     {
-        var query = db.Programs.AsQueryable();
+        var query = db.Programs
+            .Include(p => p.Domain)
+            .Include(p => p.ProgramType)
+            .AsQueryable();
         if (activeOnly) query = query.Where(p => p.IsActive);
         return await query.OrderBy(p => p.ProgramCode).ToListAsync();
     }
 
     public async Task<InterventionProgram?> GetByIdAsync(int id) =>
-        await db.Programs.FindAsync(id);
+        await db.Programs
+            .Include(p => p.Domain)
+            .Include(p => p.ProgramType)
+            .FirstOrDefaultAsync(p => p.Id == id);
 
     public async Task AddAsync(InterventionProgram program)
     {
@@ -177,6 +195,17 @@ public class ProgramRepository(AppDbContext db) : IProgramRepository
         db.Programs.Update(program);
         await db.SaveChangesAsync();
     }
+
+    public async Task DeleteAsync(int id)
+    {
+        var program = await db.Programs.FindAsync(id);
+        if (program == null) return;
+        program.IsActive = false;
+        await db.SaveChangesAsync();
+    }
+
+    public async Task<bool> IsInUseAsync(int id) =>
+        await db.SessionRecords.AnyAsync(s => s.ProgramId == id);
 
     public async Task<string> GetNextCodeAsync()
     {
@@ -311,4 +340,48 @@ public class NaturalObservationRepository(AppDbContext db) : INaturalObservation
                 (o.NextVerification != null && o.NextVerification.Contains(keyword)))
             .OrderByDescending(o => o.Date)
             .ToListAsync();
+}
+
+public class ProgramTypeRepository(AppDbContext db) : IProgramTypeRepository
+{
+    public async Task<List<ProgramTypeMaster>> GetAllAsync(bool activeOnly = true)
+    {
+        var query = db.ProgramTypes.AsQueryable();
+        if (activeOnly) query = query.Where(t => t.IsActive);
+        return await query.OrderBy(t => t.Id).ToListAsync();
+    }
+
+    public async Task<ProgramTypeMaster?> GetByIdAsync(int id) =>
+        await db.ProgramTypes.FindAsync(id);
+
+    public async Task AddAsync(ProgramTypeMaster type)
+    {
+        db.ProgramTypes.Add(type);
+        await db.SaveChangesAsync();
+    }
+
+    public async Task UpdateAsync(ProgramTypeMaster type)
+    {
+        db.ProgramTypes.Update(type);
+        await db.SaveChangesAsync();
+    }
+
+    public async Task<bool> IsInUseAsync(int id) =>
+        await db.Programs.AnyAsync(p => p.ProgramTypeId == id && p.IsActive);
+
+    public async Task<string> GetNextCodeAsync()
+    {
+        // ユーザー追加分は "T001" 形式の連番（既存の予約コードと衝突しない範囲）
+        var existing = await db.ProgramTypes
+            .Where(t => t.TypeCode.StartsWith("T"))
+            .Select(t => t.TypeCode)
+            .ToListAsync();
+
+        var maxNum = existing
+            .Select(c => int.TryParse(c[1..], out var n) ? n : 0)
+            .DefaultIfEmpty(0)
+            .Max();
+
+        return $"T{maxNum + 1:D3}";
+    }
 }

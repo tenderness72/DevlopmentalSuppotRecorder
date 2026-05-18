@@ -1,6 +1,5 @@
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Input;
 using SessionRecorder.App.ViewModels;
 
 namespace SessionRecorder.App.Views;
@@ -10,18 +9,13 @@ public partial class ProgramListView : UserControl
     public ProgramListView()
     {
         InitializeComponent();
+        IsVisibleChanged += OnIsVisibleChanged;
     }
 
-    private async void OnLoaded(object sender, RoutedEventArgs e)
+    private async void OnIsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
     {
-        if (DataContext is ProgramListViewModel vm)
+        if ((bool)e.NewValue && DataContext is ProgramListViewModel vm)
             await vm.LoadCommand.ExecuteAsync(null);
-    }
-
-    private void OnRowDoubleClick(object sender, MouseButtonEventArgs e)
-    {
-        if (DataContext is ProgramListViewModel vm)
-            vm.EditProgramCommand.Execute(null);
     }
 
     private void OnMasteryCriteriaLostFocus(object sender, RoutedEventArgs e)

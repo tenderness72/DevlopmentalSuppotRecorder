@@ -15,6 +15,7 @@ public partial class MainViewModel : ObservableObject
     public ObservationEntryViewModel ObservationEntryVm { get; }
     public SearchViewModel           SearchVm           { get; }
     public SkillDomainListViewModel  SkillDomainListVm  { get; }
+    public ProgramTypeListViewModel  ProgramTypeListVm  { get; }
     public SessionListViewModel      SessionListVm      { get; }
     public ObservationListViewModel  ObservationListVm  { get; }
     public ProgressGraphViewModel    ProgressGraphVm    { get; }
@@ -30,7 +31,8 @@ public partial class MainViewModel : ObservableObject
         SessionListViewModel      sessionListVm,
         ObservationListViewModel  observationListVm,
         ProgressGraphViewModel    progressGraphVm,
-        BackupViewModel           backupVm)
+        BackupViewModel           backupVm,
+        ProgramTypeListViewModel  programTypeListVm)
     {
         ChildListVm        = childListVm;
         ProgramListVm      = programListVm;
@@ -42,6 +44,7 @@ public partial class MainViewModel : ObservableObject
         ObservationListVm  = observationListVm;
         ProgressGraphVm    = progressGraphVm;
         BackupVm           = backupVm;
+        ProgramTypeListVm  = programTypeListVm;
 
         ChildListVm.ChildSelected += child =>
             StatusMessage = $"{child.ChildCode} {child.Name} を選択中";
@@ -105,6 +108,7 @@ public partial class MainViewModel : ObservableObject
     [RelayCommand] private void NavigateToObservationEntry() => TryNavigateTo(ObservationEntryVm);
     [RelayCommand] private void NavigateToSearch()           => TryNavigateTo(SearchVm);
     [RelayCommand] private void NavigateToSkillDomains()     => TryNavigateTo(SkillDomainListVm);
+    [RelayCommand] private void NavigateToProgramTypes()     => TryNavigateTo(ProgramTypeListVm);
     [RelayCommand] private void NavigateToSessionList()      => TryNavigateTo(SessionListVm);
     [RelayCommand] private void NavigateToObservationList()  => TryNavigateTo(ObservationListVm);
     [RelayCommand] private void NavigateToProgressGraph()    => TryNavigateTo(ProgressGraphVm);

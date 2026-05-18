@@ -1,5 +1,3 @@
-using SessionRecorder.Core.Enums;
-
 namespace SessionRecorder.Core.Entities;
 
 public class InterventionProgram
@@ -12,7 +10,10 @@ public class InterventionProgram
     public int DomainId { get; set; }
     public SkillDomain Domain { get; set; } = null!;
 
-    public ProgramType ProgramType { get; set; }
+    // 型もテーブル参照（マスタ）
+    public int ProgramTypeId { get; set; }
+    public ProgramTypeMaster ProgramType { get; set; } = null!;
+
     public string? MasteryCriteria { get; set; }
     public string? Notes { get; set; }
     public bool IsActive { get; set; } = true;
